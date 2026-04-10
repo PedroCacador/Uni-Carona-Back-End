@@ -13,7 +13,27 @@ export interface Carona {
   destino: string;
   dataHoraSaida: Date;
   assentosDisponiveis: number;
+  valorAjuda?: number;
   status: StatusCarona;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CreateCaronaDTO {
+  motoristaId: string;
+  veiculoId: string;
+  origem: string;
+  destino: string;
+  dataHoraSaida: string | Date;
+  assentosDisponiveis: number;
+  valorAjuda?: number;
+}
+
+export interface UpdateCaronaDTO {
+  origem?: string;
+  destino?: string;
+  dataHoraSaida?: string | Date;
+  assentosDisponiveis?: number;
+  valorAjuda?: number;
+  status?: StatusCarona;
 }
