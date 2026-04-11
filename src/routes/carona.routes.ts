@@ -22,4 +22,6 @@ caronaRoutes.delete('/:id', (req: Request<{ id: string }>, res: Response) => car
 // Rota específica para caronas por motorista
 caronaRoutes.get('/motorista/:id', (req: Request<{ id: string }>, res: Response) => caronaController.findByMotorista(req, res));
 
+caronaRoutes.post('/caronas/:id/reservas', (req: Request<{id: string}>, res: Response) => caronaController.createReserva(req, res));
+
 export { caronaRoutes };

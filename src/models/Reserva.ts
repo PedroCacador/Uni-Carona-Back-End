@@ -9,6 +9,7 @@ export interface Reserva {
   caronaId: string;
   passageiroId: string;
   status: StatusReserva;
+  assentosDisponiveis: number;
   createdAt: Date;
   updatedAt: Date;
 }

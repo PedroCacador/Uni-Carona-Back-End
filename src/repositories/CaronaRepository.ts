@@ -1,11 +1,12 @@
 import { Carona, CreateCaronaDTO, UpdateCaronaDTO, StatusCarona } from '../models/Carona';
 import { randomUUID } from 'crypto';
+import { Reserva, StatusReserva } from '../models/Reserva';
 
 // Simulando banco de dados (substitua pelo seu banco real)
 let caronas: Carona[] = [];
 
 export class CaronaRepository {
-  
+
   async create(data: CreateCaronaDTO): Promise<Carona> {
     const now = new Date();
     const newCarona: Carona = {
@@ -16,29 +17,29 @@ export class CaronaRepository {
       createdAt: now,
       updatedAt: now
     };
-    
+
     caronas.push(newCarona);
-    
+
     // TODO: INSERT INTO carona SET ?
     return newCarona;
   }
 
-  async findAll(filters?: { 
-    origem?: string; 
-    destino?: string; 
+  async findAll(filters?: {
+    origem?: string;
+    destino?: string;
     status?: StatusCarona;
     motoristaId?: string;
   }): Promise<Carona[]> {
     let filteredCaronas = [...caronas];
-    
+
     if (filters) {
       if (filters.origem) {
-        filteredCaronas = filteredCaronas.filter(c => 
+        filteredCaronas = filteredCaronas.filter(c =>
           c.origem.toLowerCase().includes(filters.origem!.toLowerCase())
         );
       }
       if (filters.destino) {
-        filteredCaronas = filteredCaronas.filter(c => 
+        filteredCaronas = filteredCaronas.filter(c =>
           c.destino.toLowerCase().includes(filters.destino!.toLowerCase())
         );
       }
@@ -49,10 +50,10 @@ export class CaronaRepository {
         filteredCaronas = filteredCaronas.filter(c => c.motoristaId === filters.motoristaId);
       }
     }
-    
+
     // Ordenar por dataHoraSaida (mais próximas primeiro)
     filteredCaronas.sort((a, b) => a.dataHoraSaida.getTime() - b.dataHoraSaida.getTime());
-    
+
     return filteredCaronas;
   }
 
@@ -68,38 +69,51 @@ export class CaronaRepository {
 
   async update(id: string, data: UpdateCaronaDTO): Promise<Carona | null> {
     const index = caronas.findIndex(c => c.id === id);
-    
+
     if (index === -1) return null;
-    
+
     caronas[index] = {
       ...caronas[index],
       ...data,
       dataHoraSaida: data.dataHoraSaida ? new Date(data.dataHoraSaida) : caronas[index].dataHoraSaida,
       updatedAt: new Date()
     };
-    
+
     return caronas[index];
   }
 
   async updateStatus(id: string, status: StatusCarona): Promise<Carona | null> {
     const index = caronas.findIndex(c => c.id === id);
-    
+
     if (index === -1) return null;
-    
+
     caronas[index].status = status;
     caronas[index].updatedAt = new Date();
-    
+
     return caronas[index];
   }
 
   async softDelete(id: string): Promise<boolean> {
     const index = caronas.findIndex(c => c.id === id);
-    
+
     if (index === -1) return false;
-    
+
     caronas[index].status = StatusCarona.CANCELADA;
     caronas[index].updatedAt = new Date();
-    
+
     return true;
+  }
+
+  async createReserva(data: Reserva): Promise<Reserva> {
+    const now = new Date();
+    const newReserva: Reserva = {
+      ...data,
+      id: randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      status: StatusReserva.PENDENTE
+    }
+
+    return newReserva;
   }
 }

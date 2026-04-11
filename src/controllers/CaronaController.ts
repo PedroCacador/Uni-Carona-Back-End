@@ -19,6 +19,15 @@ export class CaronaController {
     }
   }
 
+  async createReserva(req: Request, res: Response) {
+    try {
+      const reserva = await this.caronaService.create(req.body);
+      res.status(201).json(this.sanitize(reserva));
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
   async findAll(req: Request, res: Response) {
     try {
       const { origem, destino, status } = req.query;
