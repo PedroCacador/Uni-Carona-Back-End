@@ -3,13 +3,15 @@ import { CaronaService } from '../services/CaronaService';
 import { Carona, StatusCarona } from '../generated/prisma/client';
 
 export class CaronaController {
-  constructor(private readonly caronaService: CaronaService) { }
+  constructor(private readonly caronaService: CaronaService) {
+    
+  }
 
   private sanitize(carona: Carona): Omit<Carona, 'createdAt' | 'updatedAt'> {
     const { createdAt, updatedAt, ...safeCarona } = carona;
     return safeCarona;
   }
-  
+
   async create(req: Request, res: Response) {
     try {
       const carona = await this.caronaService.create(req.body);
@@ -22,17 +24,18 @@ export class CaronaController {
   async findAll(req: Request, res: Response) {
     try {
       const { origem, destino, status } = req.query;
-      
+
       const filters: { origem?: string; destino?: string; status?: StatusCarona } = {};
-      
+
       if (origem) filters.origem = origem as string;
       if (destino) filters.destino = destino as string;
       if (status) filters.status = status as StatusCarona;
-      
+
       const caronas = await this.caronaService.findAll(filters);
       const safeCaronas = caronas.map(c => this.sanitize(c));
       res.json(safeCaronas);
     } catch (error: any) {
+      console.log(error);
       res.status(400).json({ message: error.message });
     }
   }
@@ -93,7 +96,7 @@ export class CaronaController {
     try {
       const { id } = req.params;
       const carona = await this.caronaService.cancelRide(id);
-      res.json({ 
+      res.json({
         message: 'Carona cancelada com sucesso',
         carona: this.sanitize(carona)
       });

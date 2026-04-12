@@ -11,15 +11,15 @@ const caronaController = new CaronaController(caronaService);
 const caronaRoutes = Router();
 
 // Rotas de carona
-caronaRoutes.post('/', caronaController.create);
-caronaRoutes.get('/', caronaController.findAll);
-caronaRoutes.get('/ativas', caronaController.findAllActive);
-caronaRoutes.get('/:id', caronaController.findById);
-caronaRoutes.put('/:id', caronaController.update);
-caronaRoutes.patch('/:id/status', caronaController.updateStatus);
-caronaRoutes.delete('/:id', caronaController.cancel);
+caronaRoutes.get('/', caronaController.findAll.bind(caronaController));
+caronaRoutes.post('/', caronaController.create.bind(caronaController));
+caronaRoutes.get('/ativas', caronaController.findAllActive.bind(caronaController));
+caronaRoutes.get('/:id', caronaController.findById.bind(caronaController));
+caronaRoutes.put('/:id', caronaController.update.bind(caronaController));
+caronaRoutes.patch('/:id/status', caronaController.updateStatus.bind(caronaController));
+caronaRoutes.delete('/:id', caronaController.cancel.bind(caronaController));
 
 // Rota específica para caronas por motorista
-caronaRoutes.get('/motorista/:id', caronaController.findByMotorista);
+caronaRoutes.get('/motorista/:id', caronaController.findByMotorista.bind(caronaController));
 
 export { caronaRoutes };

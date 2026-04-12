@@ -8,7 +8,7 @@ import { healthRouter } from "./health.routes";
 const router = Router();
 
 router.use("/usuarios", usuarioRoutes);
-router.use("/caronas", caronaRoutes);
+router.use("/carona", caronaRoutes);
 router.use("/reservas", reservaRoutes);
 router.use("/health", healthRouter);
 

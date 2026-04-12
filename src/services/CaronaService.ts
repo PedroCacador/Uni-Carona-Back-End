@@ -34,8 +34,8 @@ export class CaronaService {
     }
 
     const payload = {
-        ...data,
-        dataHoraSaida
+      ...data,
+      dataHoraSaida
     };
 
     return this.caronaRepository.create(payload);
