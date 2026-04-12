@@ -10,7 +10,7 @@ export class CaronaService {
 
   async create(data: CreateCaronaDTO): Promise<Carona> {
     if (!data.motoristaId || !data.veiculoId || !data.origem ||
-      !data.destino || !data.dataHoraSaida || !data.assentosDisponiveis) {
+      !data.destino || !data.dataHoraSaida || data.assentosDisponiveis === undefined || data.assentosDisponiveis === null) {
       throw new Error('Campos obrigatórios: motoristaId, veiculoId, origem, destino, dataHoraSaida, assentosDisponiveis');
     }
 

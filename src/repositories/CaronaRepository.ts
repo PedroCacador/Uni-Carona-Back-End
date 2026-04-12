@@ -1,8 +1,6 @@
 import { prisma } from "../database/db";
 import { Carona, StatusCarona } from "../generated/prisma/client";
-import Decimal from "decimal.js";
 
-// Se CreateCaronaDTO existir em models/Carona, ou vamos apenas usar tipos do prisma
 export class CaronaRepository {
 
     async create(data: Omit<Carona, "id" | "createdAt" | "updatedAt" | "status">): Promise<Carona> {

@@ -1,0 +1,417 @@
+{
+  "info": {
+    "name": "Uni-Carona API",
+    "description": "Rotas da aplicação Uni-Carona.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Check Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuários",
+      "item": [
+        {
+          "name": "Criar Usuário",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Teste\",\n  \"email\": \"teste@teste.com\",\n  \"cpf\": \"12345678900\",\n  \"senha\": \"secreta\",\n  \"dataNascimento\": \"2000-01-01\",\n  \"whatsapp\": \"999999999\",\n  \"curso\": \"Engenharia\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            }
+          }
+        },
+        {
+          "name": "Listar Usuários",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Usuário por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Usuário",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Nome Atualizado\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Deletar Usuário",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Veículos",
+      "item": [
+        {
+          "name": "Criar Veículo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"ABC-1234\",\n  \"marca\": \"Fiat\",\n  \"modelo\": \"Uno\",\n  \"cor\": \"Prata\",\n  \"proprietarioId\": \"PROPRIETARIO_ID\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/veiculos",
+              "host": ["{{base_url}}"],
+              "path": ["veiculos"]
+            }
+          }
+        },
+        {
+          "name": "Listar Todos Veículos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/veiculos",
+              "host": ["{{base_url}}"],
+              "path": ["veiculos"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Veículo por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/veiculos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["veiculos", ":id"],
+              "variable": [{ "key": "id", "value": "ID_VEICULO" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar Veículo por Motorista (Proprietário)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/veiculos/motorista/:id",
+              "host": ["{{base_url}}"],
+              "path": ["veiculos", "motorista", ":id"],
+              "variable": [{ "key": "id", "value": "PROPRIETARIO_ID" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Veículo",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cor\": \"Azul Escuro\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/veiculos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["veiculos", ":id"],
+              "variable": [{ "key": "id", "value": "ID_VEICULO" }]
+            }
+          }
+        },
+        {
+          "name": "Excluir Veículo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/veiculos/:id",
+              "host": ["{{base_url}}"],
+              "path": ["veiculos", ":id"],
+              "variable": [{ "key": "id", "value": "ID_VEICULO" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Caronas",
+      "item": [
+        {
+          "name": "Criar Carona",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motoristaId\": \"ID_AQUI\",\n  \"veiculoId\": \"VEIC_ID\",\n  \"origem\": \"Centro\",\n  \"destino\": \"Campus\",\n  \"dataHoraSaida\": \"2030-01-01T10:00:00.000Z\",\n  \"assentosDisponiveis\": 4,\n  \"valorAjuda\": 5.50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/carona",
+              "host": ["{{base_url}}"],
+              "path": ["carona"]
+            }
+          }
+        },
+        {
+          "name": "Listar Caronas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/carona",
+              "host": ["{{base_url}}"],
+              "path": ["carona"]
+            }
+          }
+        },
+        {
+          "name": "Listar Caronas Ativas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/carona/ativas",
+              "host": ["{{base_url}}"],
+              "path": ["carona", "ativas"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Carona por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/carona/:id",
+              "host": ["{{base_url}}"],
+              "path": ["carona", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Motorista",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/carona/motorista/:id",
+              "host": ["{{base_url}}"],
+              "path": ["carona", "motorista", ":id"],
+              "variable": [{ "key": "id", "value": "MOT_ID" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Carona",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origem\": \"Novo Endereço\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/carona/:id",
+              "host": ["{{base_url}}"],
+              "path": ["carona", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Status Carona",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"EM_ANDAMENTO\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/carona/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["carona", ":id", "status"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Deletar (Cancelar) Carona",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/carona/:id",
+              "host": ["{{base_url}}"],
+              "path": ["carona", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "item": [
+        {
+          "name": "Criar Reserva",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": \"USER_ID\",\n  \"caronaId\": \"CARONA_ID\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reservas",
+              "host": ["{{base_url}}"],
+              "path": ["reservas"]
+            }
+          }
+        },
+        {
+          "name": "Listar Reservas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reservas",
+              "host": ["{{base_url}}"],
+              "path": ["reservas"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Reserva por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reservas/:id",
+              "host": ["{{base_url}}"],
+              "path": ["reservas", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar Reservas por Carona",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reservas/carona/:caronaId",
+              "host": ["{{base_url}}"],
+              "path": ["reservas", "carona", ":caronaId"],
+              "variable": [{ "key": "caronaId", "value": "CARONA_ID" }]
+            }
+          }
+        },
+        {
+          "name": "Buscar Reservas por Usuário",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reservas/usuario/:usuarioId",
+              "host": ["{{base_url}}"],
+              "path": ["reservas", "usuario", ":usuarioId"],
+              "variable": [{ "key": "usuarioId", "value": "USER_ID" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Status Reserva",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMADA\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reservas/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["reservas", ":id", "status"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "Cancelar Reserva",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reservas/:id",
+              "host": ["{{base_url}}"],
+              "path": ["reservas", ":id"],
+              "variable": [{ "key": "id", "value": "1" }]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    }
+  ]
+}
