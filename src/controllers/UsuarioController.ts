@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { UsuarioService } from '../services/UsuarioService';
-import { Usuario } from '../models/Usuario';
+import { Usuario } from '../generated/prisma/client';
 
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) { }
 
-  private sanitize(usuario: Usuario): Omit<Usuario, 'senhaHash'> {
-    const { senhaHash, ...safeUsuario } = usuario;
+  private sanitize(usuario: Usuario): Omit<Usuario, 'senha'> {
+    const { senha, ...safeUsuario } = usuario;
     return safeUsuario;
   }
 

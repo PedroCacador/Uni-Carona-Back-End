@@ -1,9 +1,9 @@
 import crypto from 'crypto';
-import { Usuario } from '../models/Usuario';
+import { Usuario } from '../generated/prisma/client';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 
-export type CreateUsuarioDTO = Pick<Usuario, 'nome' | 'email' | 'whatsapp' | 'curso'> & { senha: string };
-export type UpdateUsuarioDTO = Partial<Pick<Usuario, 'nome' | 'whatsapp' | 'curso'>> & { senha?: string };
+export type CreateUsuarioDTO = Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'status'>;
+export type UpdateUsuarioDTO = Partial<Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'email' | 'cpf' | 'status'>>;
 
 export class UsuarioService {
   constructor(private readonly usuarioRepository: IUsuarioRepository) {}
@@ -21,19 +21,11 @@ export class UsuarioService {
       throw new Error('E-mail já está em uso.');
     }
 
-    const agora = new Date();
-    const novoUsuario: Usuario = {
-      id: crypto.randomUUID(),
-      nome: data.nome,
-      email: data.email,
-      senhaHash: `hash_${data.senha}`, // Respeitando a regra de hash manual
-      whatsapp: data.whatsapp,
-      curso: data.curso,
+    const novoUsuario: Omit<Usuario, "id" | "createdAt" | "updatedAt"> = {
+      ...data,
+      dataNascimento: new Date(data.dataNascimento),
+      senha: `hash_${data.senha}`, // Simulando o hash
       status: 'ATIVO',
-      mediaAvaliacao: 0,
-      totalAvaliacoes: 0,
-      createdAt: agora,
-      updatedAt: agora,
     };
 
     return this.usuarioRepository.create(novoUsuario);
@@ -57,21 +49,20 @@ export class UsuarioService {
 
   async update(id: string, data: UpdateUsuarioDTO): Promise<Usuario> {
     const usuario = await this.findById(id);
+    const updateData: Partial<Usuario> & { id: string } = { ...data, id };
 
-    if (data.nome) usuario.nome = data.nome;
-    if (data.whatsapp) usuario.whatsapp = data.whatsapp;
-    if (data.curso) usuario.curso = data.curso;
-    if (data.senha) usuario.senhaHash = `hash_${data.senha}`;
+    if (data.senha) {
+      updateData.senha = `hash_${data.senha}`;
+    }
+    if (data.dataNascimento) {
+      updateData.dataNascimento = new Date(data.dataNascimento);
+    }
 
-    usuario.updatedAt = new Date();
-
-    return this.usuarioRepository.update(usuario);
+    return this.usuarioRepository.update(updateData);
   }
 
   async softDelete(id: string): Promise<void> {
     const usuario = await this.findById(id);
-    usuario.status = 'INATIVO';
-    usuario.updatedAt = new Date();
-    await this.usuarioRepository.update(usuario);
+    await this.usuarioRepository.update({ id, status: 'INATIVO' });
   }
 }

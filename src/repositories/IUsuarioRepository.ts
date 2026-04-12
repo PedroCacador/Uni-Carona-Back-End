@@ -1,10 +1,10 @@
-import { Usuario } from '../models/Usuario';
+import { Usuario } from '../generated/prisma/client';
 
 export interface IUsuarioRepository {
-  create(usuario: Usuario): Promise<Usuario>;
+  create(usuario: Omit<Usuario, "id" | "createdAt" | "updatedAt">): Promise<Usuario>;
   findAll(): Promise<Usuario[]>;
   findAllActive(): Promise<Usuario[]>;
   findById(id: string): Promise<Usuario | null>;
   findByEmail(email: string): Promise<Usuario | null>;
-  update(usuario: Usuario): Promise<Usuario>;
+  update(usuario: Partial<Usuario> & { id: string }): Promise<Usuario>;
 }

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { CaronaService } from '../services/CaronaService';
-import { Carona, StatusCarona } from '../models/Carona';
+import { Carona, StatusCarona } from '../generated/prisma/client';
 
 export class CaronaController {
   constructor(private readonly caronaService: CaronaService) { }
@@ -9,20 +9,11 @@ export class CaronaController {
     const { createdAt, updatedAt, ...safeCarona } = carona;
     return safeCarona;
   }
-
+  
   async create(req: Request, res: Response) {
     try {
       const carona = await this.caronaService.create(req.body);
       res.status(201).json(this.sanitize(carona));
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  }
-
-  async createReserva(req: Request, res: Response) {
-    try {
-      const reserva = await this.caronaService.create(req.body);
-      res.status(201).json(this.sanitize(reserva));
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

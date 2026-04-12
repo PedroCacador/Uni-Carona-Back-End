@@ -1,119 +1,80 @@
-import { Carona, CreateCaronaDTO, UpdateCaronaDTO, StatusCarona } from '../models/Carona';
-import { randomUUID } from 'crypto';
-import { Reserva, StatusReserva } from '../models/Reserva';
+import { prisma } from "../database/db";
+import { Carona, StatusCarona } from "../generated/prisma/client";
+import Decimal from "decimal.js";
 
-// Simulando banco de dados (substitua pelo seu banco real)
-let caronas: Carona[] = [];
-
+// Se CreateCaronaDTO existir em models/Carona, ou vamos apenas usar tipos do prisma
 export class CaronaRepository {
 
-  async create(data: CreateCaronaDTO): Promise<Carona> {
-    const now = new Date();
-    const newCarona: Carona = {
-      id: randomUUID(),
-      ...data,
-      dataHoraSaida: new Date(data.dataHoraSaida),
-      status: StatusCarona.AGENDADA,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    caronas.push(newCarona);
-
-    // TODO: INSERT INTO carona SET ?
-    return newCarona;
-  }
-
-  async findAll(filters?: {
-    origem?: string;
-    destino?: string;
-    status?: StatusCarona;
-    motoristaId?: string;
-  }): Promise<Carona[]> {
-    let filteredCaronas = [...caronas];
-
-    if (filters) {
-      if (filters.origem) {
-        filteredCaronas = filteredCaronas.filter(c =>
-          c.origem.toLowerCase().includes(filters.origem!.toLowerCase())
-        );
-      }
-      if (filters.destino) {
-        filteredCaronas = filteredCaronas.filter(c =>
-          c.destino.toLowerCase().includes(filters.destino!.toLowerCase())
-        );
-      }
-      if (filters.status) {
-        filteredCaronas = filteredCaronas.filter(c => c.status === filters.status);
-      }
-      if (filters.motoristaId) {
-        filteredCaronas = filteredCaronas.filter(c => c.motoristaId === filters.motoristaId);
-      }
+    async create(data: Omit<Carona, "id" | "createdAt" | "updatedAt" | "status">): Promise<Carona> {
+        return prisma.carona.create({
+            data: {
+                ...data,
+                status: StatusCarona.AGENDADA
+            }
+        });
     }
 
-    // Ordenar por dataHoraSaida (mais próximas primeiro)
-    filteredCaronas.sort((a, b) => a.dataHoraSaida.getTime() - b.dataHoraSaida.getTime());
-
-    return filteredCaronas;
-  }
-
-  async findById(id: string): Promise<Carona | null> {
-    const carona = caronas.find(c => c.id === id);
-    return carona || null;
-  }
-
-  async findByMotorista(motoristaId: string): Promise<Carona[]> {
-    const caronasMotorista = caronas.filter(c => c.motoristaId === motoristaId);
-    return caronasMotorista;
-  }
-
-  async update(id: string, data: UpdateCaronaDTO): Promise<Carona | null> {
-    const index = caronas.findIndex(c => c.id === id);
-
-    if (index === -1) return null;
-
-    caronas[index] = {
-      ...caronas[index],
-      ...data,
-      dataHoraSaida: data.dataHoraSaida ? new Date(data.dataHoraSaida) : caronas[index].dataHoraSaida,
-      updatedAt: new Date()
-    };
-
-    return caronas[index];
-  }
-
-  async updateStatus(id: string, status: StatusCarona): Promise<Carona | null> {
-    const index = caronas.findIndex(c => c.id === id);
-
-    if (index === -1) return null;
-
-    caronas[index].status = status;
-    caronas[index].updatedAt = new Date();
-
-    return caronas[index];
-  }
-
-  async softDelete(id: string): Promise<boolean> {
-    const index = caronas.findIndex(c => c.id === id);
-
-    if (index === -1) return false;
-
-    caronas[index].status = StatusCarona.CANCELADA;
-    caronas[index].updatedAt = new Date();
-
-    return true;
-  }
-
-  async createReserva(data: Reserva): Promise<Reserva> {
-    const now = new Date();
-    const newReserva: Reserva = {
-      ...data,
-      id: randomUUID(),
-      createdAt: now,
-      updatedAt: now,
-      status: StatusReserva.PENDENTE
+    async findAll(filters?: {
+        origem?: string;
+        destino?: string;
+        status?: StatusCarona;
+        motoristaId?: string;
+    }): Promise<Carona[]> {
+        return prisma.carona.findMany({
+            where: filters ? {
+                origem: filters.origem ? { contains: filters.origem, mode: 'insensitive' } : undefined,
+                destino: filters.destino ? { contains: filters.destino, mode: 'insensitive' } : undefined,
+                status: filters.status,
+                motoristaId: filters.motoristaId
+            } : undefined,
+            orderBy: { dataHoraSaida: 'asc' },
+            include: { motorista: true, veiculo: true }
+        });
     }
 
-    return newReserva;
-  }
+    async findById(id: string): Promise<Carona | null> {
+        return prisma.carona.findUnique({
+            where: { id },
+            include: { motorista: true, veiculo: true }
+        });
+    }
+
+    async findByMotorista(motoristaId: string): Promise<Carona[]> {
+        return prisma.carona.findMany({
+            where: { motoristaId }
+        });
+    }
+
+    async update(id: string, data: Partial<Omit<Carona, "id" | "createdAt" | "updatedAt">>): Promise<Carona> {
+        return prisma.carona.update({
+            where: { id },
+            data
+        });
+    }
+
+    async updateStatus(id: string, status: StatusCarona): Promise<Carona> {
+        return prisma.carona.update({
+            where: { id },
+            data: { status }
+        });
+    }
+
+    async updateAssentos(id: string, increment: number): Promise<Carona> {
+        return prisma.carona.update({
+            where: { id },
+            data: {
+                assentosDisponiveis: {
+                    increment: increment
+                }
+            }
+        });
+    }
+
+    async softDelete(id: string): Promise<boolean> {
+        await prisma.carona.update({
+            where: { id },
+            data: { status: StatusCarona.CANCELADA }
+        });
+        return true;
+    }
 }
