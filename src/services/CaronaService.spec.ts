@@ -91,6 +91,57 @@ describe('CaronaService', () => {
       expect(caronaRepositoryMock.findAll).toHaveBeenCalledWith({ origem: 'Rua A' });
       expect(result).toEqual([mockCarona]);
     });
+
+    it('Deve repassar vagasDisponiveis ao repositório', async () => {
+      caronaRepositoryMock.findAll.mockResolvedValueOnce([mockCarona]);
+      await caronaService.findAll({
+        origem: 'Campus',
+        destino: 'Centro',
+        vagasDisponiveis: 3,
+      });
+      expect(caronaRepositoryMock.findAll).toHaveBeenCalledWith({
+        origem: 'Campus',
+        destino: 'Centro',
+        vagasDisponiveis: 3,
+      });
+    });
+
+    it('Deve repassar intervalo de datas e apenasFuturas ao repositório', async () => {
+      const min = new Date('2026-05-01T08:00:00.000Z');
+      const max = new Date('2026-05-02T20:00:00.000Z');
+      caronaRepositoryMock.findAll.mockResolvedValueOnce([]);
+      await caronaService.findAll({
+        dataHoraMin: min,
+        dataHoraMax: max,
+        apenasFuturas: true,
+        status: StatusCarona.AGENDADA,
+      });
+      expect(caronaRepositoryMock.findAll).toHaveBeenCalledWith({
+        dataHoraMin: min,
+        dataHoraMax: max,
+        apenasFuturas: true,
+        status: StatusCarona.AGENDADA,
+      });
+    });
+
+    it('Deve lançar erro se vagasDisponiveis for menor que 1', async () => {
+      await expect(caronaService.findAll({ vagasDisponiveis: 0 })).rejects.toThrow(
+        'vagasDisponiveis deve ser um inteiro entre 1 e 8.',
+      );
+      expect(caronaRepositoryMock.findAll).not.toHaveBeenCalled();
+    });
+
+    it('Deve lançar erro se vagasDisponiveis for maior que 8', async () => {
+      await expect(caronaService.findAll({ vagasDisponiveis: 9 })).rejects.toThrow(
+        'vagasDisponiveis deve ser um inteiro entre 1 e 8.',
+      );
+    });
+
+    it('Deve lançar erro se vagasDisponiveis não for inteiro', async () => {
+      await expect(caronaService.findAll({ vagasDisponiveis: 2.5 as unknown as number })).rejects.toThrow(
+        'vagasDisponiveis deve ser um inteiro entre 1 e 8.',
+      );
+    });
   });
 
   describe('findAllActive', () => {

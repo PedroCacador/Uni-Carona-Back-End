@@ -45,7 +45,17 @@ export class CaronaService {
     origem?: string;
     destino?: string;
     status?: StatusCarona;
+    motoristaId?: string;
+    apenasFuturas?: boolean;
+    dataHoraMin?: Date;
+    dataHoraMax?: Date;
+    vagasDisponiveis?: number;
   }): Promise<Carona[]> {
+    if (filters?.vagasDisponiveis !== undefined) {
+      if (!Number.isInteger(filters.vagasDisponiveis) || filters.vagasDisponiveis < 1 || filters.vagasDisponiveis > 8) {
+        throw new Error('vagasDisponiveis deve ser um inteiro entre 1 e 8.');
+      }
+    }
     return this.caronaRepository.findAll(filters);
   }
 

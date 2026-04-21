@@ -1,9 +1,14 @@
+import 'dotenv/config';
 import { PrismaClient } from '../generated/prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const connectionString = `${process.env.DATABASE_URL}`;
-console.log(connectionString);
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error(
+    'DATABASE_URL não definida. Crie um arquivo .env na raiz do projeto com DATABASE_URL="postgresql://..."',
+  );
+}
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 

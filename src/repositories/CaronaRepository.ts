@@ -17,14 +17,48 @@ export class CaronaRepository {
         destino?: string;
         status?: StatusCarona;
         motoristaId?: string;
+        apenasFuturas?: boolean;
+        dataHoraMin?: Date;
+        dataHoraMax?: Date;
+        /** Caronas com pelo menos N vagas livres (assentosDisponiveis >= N) */
+        vagasDisponiveis?: number;
     }): Promise<Carona[]> {
+        const where: Record<string, unknown> = {};
+
+        if (filters?.origem) {
+            where.origem = { contains: filters.origem, mode: 'insensitive' };
+        }
+        if (filters?.destino) {
+            where.destino = { contains: filters.destino, mode: 'insensitive' };
+        }
+        if (filters?.status !== undefined) {
+            where.status = filters.status;
+        }
+        if (filters?.motoristaId) {
+            where.motoristaId = filters.motoristaId;
+        }
+        if (filters?.vagasDisponiveis !== undefined && filters.vagasDisponiveis > 0) {
+            where.assentosDisponiveis = { gte: filters.vagasDisponiveis };
+        }
+
+        const dateAnd: Record<string, unknown>[] = [];
+        if (filters?.apenasFuturas) {
+            dateAnd.push({ dataHoraSaida: { gt: new Date() } });
+        }
+        if (filters?.dataHoraMin) {
+            dateAnd.push({ dataHoraSaida: { gte: filters.dataHoraMin } });
+        }
+        if (filters?.dataHoraMax) {
+            dateAnd.push({ dataHoraSaida: { lte: filters.dataHoraMax } });
+        }
+        if (dateAnd.length > 0) {
+            where.AND = dateAnd;
+        }
+
+        const hasWhere = Object.keys(where).length > 0;
+
         return prisma.carona.findMany({
-            where: filters ? {
-                origem: filters.origem ? { contains: filters.origem, mode: 'insensitive' } : undefined,
-                destino: filters.destino ? { contains: filters.destino, mode: 'insensitive' } : undefined,
-                status: filters.status,
-                motoristaId: filters.motoristaId
-            } : undefined,
+            where: hasWhere ? (where as object) : undefined,
             orderBy: { dataHoraSaida: 'asc' },
             include: { motorista: true, veiculo: true }
         });
