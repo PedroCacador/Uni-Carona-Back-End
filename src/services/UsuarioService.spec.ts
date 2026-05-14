@@ -70,7 +70,7 @@ describe('UsuarioService', () => {
       expect(usuarioRepositoryMock.findByEmail).toHaveBeenCalledWith(createDto.email);
       expect(usuarioRepositoryMock.create).toHaveBeenCalledWith({
         ...createDto,
-        senha: 'hash_senha123',
+        senha: expect.any(String),
         status: 'ATIVO',
       });
       expect(result).toEqual(mockUsuario);
@@ -129,7 +129,7 @@ describe('UsuarioService', () => {
       expect(usuarioRepositoryMock.update).toHaveBeenCalledWith({
         id: '1',
         nome: updateDto.nome,
-        senha: 'hash_nova_senha',
+        senha: expect.any(String),
       });
       expect(result.nome).toBe(updateDto.nome);
     });

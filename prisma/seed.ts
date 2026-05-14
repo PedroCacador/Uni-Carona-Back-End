@@ -1,15 +1,18 @@
 import { prisma } from '../src/database/db';
+import bcrypt from 'bcryptjs';
 
 async function main() {
   console.log('Iniciando o seeding do banco de dados...');
 
+  const hashedPassword = await bcrypt.hash('senha_segura_123', 10);
+
   // Criar usuários
   const alice = await prisma.usuario.upsert({
     where: { email: 'alice@exemplo.com' },
-    update: {},
+    update: { senha: hashedPassword },
     create: {
       nome: 'Alice Silva',
-      senha: 'senha_segura_123',
+      senha: hashedPassword,
       email: 'alice@exemplo.com',
       cpf: '111.111.111-11',
       whatsapp: '11999999999',
@@ -21,10 +24,10 @@ async function main() {
 
   const bob = await prisma.usuario.upsert({
     where: { email: 'bob@exemplo.com' },
-    update: {},
+    update: { senha: hashedPassword },
     create: {
       nome: 'Bob Souza',
-      senha: 'senha_segura_123',
+      senha: hashedPassword,
       email: 'bob@exemplo.com',
       cpf: '222.222.222-22',
       whatsapp: '11888888888',
@@ -47,6 +50,10 @@ async function main() {
     },
   });
 
+  // Limpar caronas e reservas antigas para evitar erros de duplicidade ou FK no seed
+  await prisma.reserva.deleteMany({});
+  await prisma.carona.deleteMany({});
+
   // Criar uma carona (Alice como motorista)
   const carona = await prisma.carona.create({
     data: {
@@ -62,7 +69,7 @@ async function main() {
   });
 
   // Criar uma reserva (Bob como passageiro)
-  const reserva = await prisma.reserva.create({
+  await prisma.reserva.create({
     data: {
       status: 'CONFIRMADA',
       quantidadePessoas: 1,

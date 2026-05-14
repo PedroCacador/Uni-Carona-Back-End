@@ -42,6 +42,12 @@ export class UsuarioController {
   async update(req: Request<{ id: string }>, res: Response) {
     try {
       const { id } = req.params;
+      const loggedUserId = req.userId;
+
+      if (id !== loggedUserId) {
+        return res.status(403).json({ message: 'Você não tem permissão para atualizar outro usuário.' });
+      }
+
       const usuario = await this.usuarioService.update(id, req.body);
       res.json(this.sanitize(usuario));
     } catch (error: any) {
@@ -52,6 +58,12 @@ export class UsuarioController {
   async delete(req: Request<{ id: string }>, res: Response) {
     try {
       const { id } = req.params;
+      const loggedUserId = req.userId;
+
+      if (id !== loggedUserId) {
+        return res.status(403).json({ message: 'Você não tem permissão para deletar outro usuário.' });
+      }
+
       await this.usuarioService.softDelete(id);
       res.status(204).send();
     } catch (error: any) {

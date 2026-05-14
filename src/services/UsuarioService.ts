@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { Usuario } from '../generated/prisma/client';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 
@@ -21,10 +21,12 @@ export class UsuarioService {
       throw new Error('E-mail já está em uso.');
     }
 
+    const hashedPassword = await bcrypt.hash(data.senha, 10);
+
     const novoUsuario: Omit<Usuario, "id" | "createdAt" | "updatedAt"> = {
       ...data,
       dataNascimento: new Date(data.dataNascimento),
-      senha: `hash_${data.senha}`, // Simulando o hash
+      senha: hashedPassword,
       status: 'ATIVO',
     };
 
@@ -48,11 +50,11 @@ export class UsuarioService {
   }
 
   async update(id: string, data: UpdateUsuarioDTO): Promise<Usuario> {
-    const usuario = await this.findById(id);
+    await this.findById(id);
     const updateData: Partial<Usuario> & { id: string } = { ...data, id };
 
     if (data.senha) {
-      updateData.senha = `hash_${data.senha}`;
+      updateData.senha = await bcrypt.hash(data.senha, 10);
     }
     if (data.dataNascimento) {
       updateData.dataNascimento = new Date(data.dataNascimento);
@@ -62,7 +64,7 @@ export class UsuarioService {
   }
 
   async softDelete(id: string): Promise<void> {
-    const usuario = await this.findById(id);
+    await this.findById(id);
     await this.usuarioRepository.update({ id, status: 'INATIVO' });
   }
 }

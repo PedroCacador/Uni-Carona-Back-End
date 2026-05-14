@@ -6,7 +6,12 @@ export class VeiculoController {
 
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const veiculo = await this.veiculoService.create(req.body);
+      const loggedUserId = req.userId;
+      
+      // Garante que o proprietário é o usuário logado
+      const data = { ...req.body, proprietarioId: loggedUserId };
+      
+      const veiculo = await this.veiculoService.create(data);
       res.status(201).json(veiculo);
     } catch (error: any) {
       if (
@@ -52,6 +57,15 @@ export class VeiculoController {
   async update(req: Request, res: Response): Promise<void> {
     try {
       const id = req.params.id as string;
+      const loggedUserId = req.userId;
+      
+      const veiculoExistente = await this.veiculoService.findById(id);
+      
+      if (veiculoExistente.proprietarioId !== loggedUserId) {
+        res.status(403).json({ error: 'Você não tem permissão para atualizar este veículo.' });
+        return;
+      }
+
       const veiculo = await this.veiculoService.update(id, req.body);
       res.json(veiculo);
     } catch (error: any) {
@@ -62,6 +76,15 @@ export class VeiculoController {
   async delete(req: Request, res: Response): Promise<void> {
     try {
       const id = req.params.id as string;
+      const loggedUserId = req.userId;
+
+      const veiculoExistente = await this.veiculoService.findById(id);
+      
+      if (veiculoExistente.proprietarioId !== loggedUserId) {
+        res.status(403).json({ error: 'Você não tem permissão para excluir este veículo.' });
+        return;
+      }
+
       await this.veiculoService.delete(id);
       res.status(204).send();
     } catch (error: any) {
