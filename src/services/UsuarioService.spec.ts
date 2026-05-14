@@ -18,6 +18,7 @@ describe('UsuarioService', () => {
     senha: 'hash_senha123',
     dataNascimento: mockDate,
     status: 'ATIVO',
+    role: 'USER',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -72,6 +73,7 @@ describe('UsuarioService', () => {
         ...createDto,
         senha: expect.any(String),
         status: 'ATIVO',
+        role: 'USER',
       });
       expect(result).toEqual(mockUsuario);
     });
@@ -119,7 +121,7 @@ describe('UsuarioService', () => {
       senha: 'nova_senha',
     };
 
-    it('should update a user successfully', async () => {
+    it('Deve atualizar um usuário com sucesso', async () => {
       usuarioRepositoryMock.findById.mockResolvedValueOnce(mockUsuario);
       usuarioRepositoryMock.update.mockResolvedValueOnce({ ...mockUsuario, nome: updateDto.nome! });
 
@@ -136,7 +138,7 @@ describe('UsuarioService', () => {
   });
 
   describe('softDelete', () => {
-    it('should set user status to INATIVO', async () => {
+    it('Deve definir o status do usuário como INATIVO', async () => {
       usuarioRepositoryMock.findById.mockResolvedValueOnce(mockUsuario);
       usuarioRepositoryMock.update.mockResolvedValueOnce({ ...mockUsuario, status: 'INATIVO' });
 

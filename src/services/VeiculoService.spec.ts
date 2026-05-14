@@ -29,6 +29,7 @@ describe('VeiculoService', () => {
     senha: 'hash_senha123',
     dataNascimento: new Date(),
     status: 'ATIVO' as const,
+    role: 'USER' as const,
     createdAt: new Date(),
     updatedAt: new Date()
   };

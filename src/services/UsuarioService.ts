@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { Usuario } from '../generated/prisma/client';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 
-export type CreateUsuarioDTO = Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'status'>;
+export type CreateUsuarioDTO = Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'role'> & { role?: string };
 export type UpdateUsuarioDTO = Partial<Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'email' | 'cpf' | 'status'>>;
 
 export class UsuarioService {
@@ -28,6 +28,7 @@ export class UsuarioService {
       dataNascimento: new Date(data.dataNascimento),
       senha: hashedPassword,
       status: 'ATIVO',
+      role: (data.role as any) || 'USER',
     };
 
     return this.usuarioRepository.create(novoUsuario);

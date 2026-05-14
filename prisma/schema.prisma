@@ -17,6 +17,11 @@ enum StatusUsuario {
   INATIVO
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model Usuario {
   id       String @id @default(uuid())
   nome     String
@@ -25,6 +30,7 @@ model Usuario {
   cpf      String @unique
   whatsapp String
   curso    String
+  role     Role   @default(USER)
 
   avaliacoesFeitas    Avaliacao[] @relation("Avaliador")
   avaliacoesRecebidas Avaliacao[] @relation("Avaliado")

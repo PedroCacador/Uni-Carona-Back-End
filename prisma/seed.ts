@@ -19,6 +19,7 @@ async function main() {
       curso: 'Ciência da Computação',
       status: 'ATIVO',
       dataNascimento: new Date('2000-01-01'),
+      role: 'ADMIN',
     },
   });
 
@@ -34,6 +35,7 @@ async function main() {
       curso: 'Engenharia de Software',
       status: 'ATIVO',
       dataNascimento: new Date('1999-05-15'),
+      role: 'USER',
     },
   });
 
