@@ -71,7 +71,14 @@ enum StatusCarona {
 model Carona {
   id                  String       @id @default(uuid())
   origem              String
+  latitudeOrigem      Float?
+  longitudeOrigem     Float?
   destino             String
+  latitudeDestino     Float?
+  longitudeDestino    Float?
+  rotaPolyline        String?
+  distanciaMetros     Int?
+  duracaoSegundos     Int?
   dataHoraSaida       DateTime
   assentosDisponiveis Int
   valorAjuda          Decimal?
