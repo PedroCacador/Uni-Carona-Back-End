@@ -71,12 +71,60 @@ async function main() {
   });
 
   // Criar uma reserva (Bob como passageiro)
+  // Limpar avaliações antigas
+  await prisma.avaliacao.deleteMany({});
+
+  // Criar uma reserva (Bob como passageiro) na primeira carona
   await prisma.reserva.create({
     data: {
       status: 'CONFIRMADA',
       quantidadePessoas: 1,
       caronaId: carona.id,
       usuarioId: bob.id,
+    },
+  });
+
+  // Criar uma carona finalizada
+  const caronaFinalizada = await prisma.carona.create({
+    data: {
+      origem: 'Centro da Cidade',
+      destino: 'Shopping',
+      dataHoraSaida: new Date(Date.now() - 1000 * 60 * 60 * 24), // Ontem
+      assentosDisponiveis: 2,
+      valorAjuda: 10.0,
+      status: 'FINALIZADA',
+      motoristaId: alice.id,
+      veiculoId: veiculoAlice.id,
+    },
+  });
+
+  // Criar reserva confirmada para a carona finalizada
+  await prisma.reserva.create({
+    data: {
+      status: 'CONFIRMADA',
+      quantidadePessoas: 1,
+      caronaId: caronaFinalizada.id,
+      usuarioId: bob.id,
+    },
+  });
+
+  // Bob avalia Alice
+  await prisma.avaliacao.create({
+    data: {
+      caronaId: caronaFinalizada.id,
+      avaliadorId: bob.id,
+      avaliadoId: alice.id,
+      nota: 5,
+      comentario: 'Excelente motorista, super pontual e gentil!',
+    },
+  });
+
+  // Atualiza as métricas da Alice
+  await prisma.usuario.update({
+    where: { id: alice.id },
+    data: {
+      mediaAvaliacao: 5,
+      totalAvaliacoes: 1,
     },
   });
 

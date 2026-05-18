@@ -1,7 +1,7 @@
 import { Usuario } from '../generated/prisma/client';
 
 export interface IUsuarioRepository {
-  create(usuario: Omit<Usuario, "id" | "createdAt" | "updatedAt">): Promise<Usuario>;
+  create(usuario: Omit<Usuario, "id" | "createdAt" | "updatedAt" | "mediaAvaliacao" | "totalAvaliacoes">): Promise<Usuario>;
   findAll(): Promise<Usuario[]>;
   findAllActive(): Promise<Usuario[]>;
   findById(id: string): Promise<Usuario | null>;

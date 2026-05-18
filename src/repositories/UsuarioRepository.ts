@@ -4,7 +4,7 @@ import { Usuario } from '../generated/prisma/client';
 
 export class UsuarioRepository implements IUsuarioRepository {
 
-  async create(usuario: Omit<Usuario, "id" | "createdAt" | "updatedAt">): Promise<Usuario> {
+  async create(usuario: Omit<Usuario, "id" | "createdAt" | "updatedAt" | "mediaAvaliacao" | "totalAvaliacoes">): Promise<Usuario> {
     return prisma.usuario.create({
       data: usuario
     });

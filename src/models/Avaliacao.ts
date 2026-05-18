@@ -4,7 +4,7 @@ export interface Avaliacao {
   avaliadorId: string;
   avaliadoId: string;
   nota: number;
-  comentario?: string;
+  comentario?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -44,6 +44,9 @@ model Usuario {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  mediaAvaliacao  Float @default(0)
+  totalAvaliacoes Int   @default(0)
 }
 
 model Veiculo {

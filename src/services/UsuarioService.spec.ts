@@ -19,7 +19,7 @@ describe('UsuarioService', () => {
     dataNascimento: mockDate,
     status: 'ATIVO',
     role: 'USER',
-    createdAt: new Date(),
+    mediaAvaliacao: 0, totalAvaliacoes: 0, createdAt: new Date(),
     updatedAt: new Date(),
   };
 

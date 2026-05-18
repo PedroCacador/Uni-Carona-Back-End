@@ -30,7 +30,7 @@ describe('VeiculoService', () => {
     dataNascimento: new Date(),
     status: 'ATIVO' as const,
     role: 'USER' as const,
-    createdAt: new Date(),
+    mediaAvaliacao: 0, totalAvaliacoes: 0, createdAt: new Date(),
     updatedAt: new Date()
   };
 

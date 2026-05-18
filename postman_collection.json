@@ -674,6 +674,60 @@
           }
         }
       ]
+    },
+    {
+      "name": "Avaliações",
+      "item": [
+        {
+          "name": "Criar Avaliação (Protegido)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caronaId\": \"ID_CARONA\",\n  \"avaliadorId\": \"ID_AVALIADOR\",\n  \"avaliadoId\": \"ID_AVALIADO\",\n  \"nota\": 5,\n  \"comentario\": \"Ótima viagem!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/avaliacoes",
+              "host": ["{{base_url}}"],
+              "path": ["avaliacoes"]
+            }
+          }
+        },
+        {
+          "name": "Listar Avaliações por Usuário",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/avaliacoes/usuario/:usuarioId",
+              "host": ["{{base_url}}"],
+              "path": ["avaliacoes", "usuario", ":usuarioId"],
+              "variable": [
+                {
+                  "key": "usuarioId",
+                  "value": "ID_USUARIO"
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "variable": [
