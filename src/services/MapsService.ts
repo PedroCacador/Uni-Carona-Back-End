@@ -21,13 +21,21 @@ export interface IMapsService {
 export class OpenMapsService implements IMapsService {
   async searchPlaces(query: string, lat?: number, lon?: number): Promise<GeocodingResult[]> {
     try {
+      let params: any = {
+        q: query,
+        limit: 20
+      };
+
+      if (lat && lon) {
+        const offset = 0.5;
+        params.lat = lat;
+        params.lon = lon;
+        params.bbox = `${lon - offset},${lat - offset},${lon + offset},${lat + offset}`;
+        params.location_bias_scale = 0.8;
+      }
+
       const response = await axios.get('http://photon.komoot.io/api', {
-        params: {
-          q: query,
-          limit: 10,
-          lat: lat,
-          lon: lon
-        },
+        params,
         headers: {
           'User-Agent': 'UniCaronaApp-Thiago-Dev',
           'Accept': 'application/json'
@@ -38,10 +46,20 @@ export class OpenMapsService implements IMapsService {
         return [];
       }
 
-      return response.data.features.map((item: any) => {
+      // Filtramos fora coisas como cidades inteiras, estados ou fronteiras
+      const filteredFeatures = response.data.features.filter((feature: any) => {
+        const { osm_key, osm_value } = feature.properties;
+        if (osm_key === 'boundary') return false;
+        if (osm_key === 'place' && ['city', 'state', 'country', 'region', 'county', 'municipality', 'town', 'village'].includes(osm_value)) {
+          return false;
+        }
+        return true;
+      });
+
+      return filteredFeatures.slice(0, 5).map((item: any) => {
         const { coordinates } = item.geometry;
-        const { name, street, city, state, country } = item.properties;
-        const address = [name, street, city, state].filter(Boolean).join(', ');
+        const { name, street, district, city, state } = item.properties;
+        const address = [name, street, district, city, state].filter(Boolean).join(', ');
 
         return {
           latitude: coordinates[1],
