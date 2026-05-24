@@ -7,6 +7,7 @@ import { healthRouter } from "./health.routes";
 import { veiculoRoutes } from "./veiculo.routes";
 import { authRoutes } from "./auth.routes";
 import { avaliacaoRoutes } from "./avaliacao.routes";
+import { mapsRoutes } from "./maps.routes";
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.use("/health", healthRouter);
 router.use("/veiculos", veiculoRoutes);
 router.use("/auth", authRoutes);
 router.use("/avaliacoes", avaliacaoRoutes);
+router.use("/maps", mapsRoutes);
 
 export default router;
