@@ -2,10 +2,12 @@ import { CaronaService, CreateCaronaDTO, UpdateCaronaDTO } from './CaronaService
 import { CaronaRepository } from '../repositories/CaronaRepository';
 import { Carona, StatusCarona } from '../generated/prisma/client';
 import { Decimal } from 'decimal.js';
+import { IMapsService } from './MapsService';
 
 describe('CaronaService', () => {
   let caronaService: CaronaService;
   let caronaRepositoryMock: jest.Mocked<CaronaRepository>;
+  let mapsServiceMock: jest.Mocked<IMapsService>;
 
   const futureDate = new Date();
   futureDate.setDate(futureDate.getDate() + 1);
@@ -18,7 +20,14 @@ describe('CaronaService', () => {
     motoristaId: 'mot1',
     veiculoId: 'vei1',
     origem: 'Rua A',
+    latitudeOrigem: -23.5505,
+    longitudeOrigem: -46.6333,
     destino: 'Rua B',
+    latitudeDestino: -23.5515,
+    longitudeDestino: -46.6343,
+    rotaPolyline: 'polyline_abc',
+    distanciaMetros: 5000,
+    duracaoSegundos: 600,
     dataHoraSaida: futureDate,
     assentosDisponiveis: 4,
     valorAjuda: new Decimal(10),
@@ -39,7 +48,13 @@ describe('CaronaService', () => {
       softDelete: jest.fn(),
     } as unknown as jest.Mocked<CaronaRepository>;
 
-    caronaService = new CaronaService(caronaRepositoryMock);
+    mapsServiceMock = {
+      getCoordinates: jest.fn(),
+      getRoute: jest.fn(),
+      searchPlaces: jest.fn(),
+    };
+
+    caronaService = new CaronaService(caronaRepositoryMock, mapsServiceMock);
   });
 
   describe('create', () => {
@@ -77,9 +92,25 @@ describe('CaronaService', () => {
     });
 
     it('Deve criar uma carona com sucesso', async () => {
+      mapsServiceMock.getCoordinates.mockResolvedValueOnce({ latitude: -23.5505, longitude: -46.6333, address: 'Rua A' });
+      mapsServiceMock.getCoordinates.mockResolvedValueOnce({ latitude: -23.5515, longitude: -46.6343, address: 'Rua B' });
+      mapsServiceMock.getRoute.mockResolvedValueOnce({ coordinates: [{ latitude: -23.5505, longitude: -46.6333 }], distanceMetros: 5000, duracaoSegundos: 600 });
       caronaRepositoryMock.create.mockResolvedValueOnce(mockCarona);
+
       const result = await caronaService.create(createDto);
-      expect(caronaRepositoryMock.create).toHaveBeenCalledWith({ ...createDto, dataHoraSaida: futureDate });
+
+      expect(mapsServiceMock.getCoordinates).toHaveBeenCalledTimes(2);
+      expect(mapsServiceMock.getRoute).toHaveBeenCalled();
+      expect(caronaRepositoryMock.create).toHaveBeenCalledWith(expect.objectContaining({
+        ...createDto,
+        latitudeOrigem: -23.5505,
+        longitudeOrigem: -46.6333,
+        latitudeDestino: -23.5515,
+        longitudeDestino: -46.6343,
+        rotaPolyline: 'polyline_abc',
+        distanciaMetros: 5000,
+        duracaoSegundos: 600
+      }));
       expect(result).toEqual(mockCarona);
     });
   });

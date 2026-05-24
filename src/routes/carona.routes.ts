@@ -1,20 +1,19 @@
-
 import { Router } from 'express';
 import { CaronaController } from '../controllers/CaronaController';
 import { CaronaService } from '../services/CaronaService';
 import { CaronaRepository } from '../repositories/CaronaRepository';
 import { authMiddleware } from '../middlewares/AuthMiddleware';
+import { OpenMapsService } from '../services/MapsService';
 
 const caronaRepository = new CaronaRepository();
-const caronaService = new CaronaService(caronaRepository);
+const mapsService = new OpenMapsService();
+const caronaService = new CaronaService(caronaRepository, mapsService);
 const caronaController = new CaronaController(caronaService);
 
 const caronaRoutes = Router();
 
-// Rotas estáticas antes de /:id (ordem importa no Express)
 caronaRoutes.get('/', caronaController.findAll.bind(caronaController));
 caronaRoutes.post('/', authMiddleware, caronaController.create.bind(caronaController));
-// Busca com padrão para passageiros: só AGENDADA + saída futura (pode sobrescrever via query)
 caronaRoutes.get('/buscar', (req, res) => {
   const q = req.query as Record<string, string | undefined>;
   if (q.status === undefined) q.status = 'AGENDADA';

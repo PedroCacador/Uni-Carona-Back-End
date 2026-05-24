@@ -1,12 +1,16 @@
 import { CaronaRepository } from '../repositories/CaronaRepository';
 import { Carona, StatusCarona } from '../generated/prisma/client';
 import { Decimal } from 'decimal.js';
+import { IMapsService } from './MapsService';
 
-export type CreateCaronaDTO = Omit<Carona, "id" | "createdAt" | "updatedAt" | "status">;
+export type CreateCaronaDTO = Omit<Carona, "id" | "createdAt" | "updatedAt" | "status" | "latitudeOrigem" | "longitudeOrigem" | "latitudeDestino" | "longitudeDestino" | "rotaPolyline" | "distanciaMetros" | "duracaoSegundos">;
 export type UpdateCaronaDTO = Partial<Omit<Carona, "id" | "createdAt" | "updatedAt">>;
 
 export class CaronaService {
-  constructor(private readonly caronaRepository: CaronaRepository) { }
+  constructor(
+    private readonly caronaRepository: CaronaRepository,
+    private readonly mapsService: IMapsService
+  ) { }
 
   async create(data: CreateCaronaDTO): Promise<Carona> {
     if (!data.motoristaId || !data.veiculoId || !data.origem ||
@@ -33,9 +37,33 @@ export class CaronaService {
       throw new Error('Data e hora devem ser futuras');
     }
 
+    let geoOrigem, geoDestino, rota;
+    try {
+      [geoOrigem, geoDestino] = await Promise.all([
+        this.mapsService.getCoordinates(data.origem),
+        this.mapsService.getCoordinates(data.destino)
+      ]);
+
+      rota = await this.mapsService.getRoute(
+        { lat: geoOrigem.latitude, lng: geoOrigem.longitude },
+        { lat: geoDestino.latitude, lng: geoDestino.longitude }
+      );
+    } catch (error: any) {
+      console.error('[CaronaService] Error fetching map data:', error.message);
+      // Fallback or rethrow depending on requirements. For now, let's just log and continue with nulls if it fails,
+      // or throw if it's critical. Usually, coordinates are critical for maps.
+    }
+
     const payload = {
       ...data,
-      dataHoraSaida
+      dataHoraSaida,
+      latitudeOrigem: geoOrigem?.latitude ?? null,
+      longitudeOrigem: geoOrigem?.longitude ?? null,
+      latitudeDestino: geoDestino?.latitude ?? null,
+      longitudeDestino: geoDestino?.longitude ?? null,
+      rotaPolyline: rota?.coordinates ? JSON.stringify(rota.coordinates) : null,
+      distanciaMetros: rota?.distanceMetros ?? null,
+      duracaoSegundos: rota?.duracaoSegundos ?? null
     };
 
     return this.caronaRepository.create(payload);
