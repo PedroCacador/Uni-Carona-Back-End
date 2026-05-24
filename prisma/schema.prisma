@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,63 +7,37 @@ datasource db {
   provider = "postgresql"
 }
 
-enum StatusUsuario {
-  ATIVO
-  INATIVO
-}
-
-enum Role {
-  USER
-  ADMIN
-}
-
 model Usuario {
-  id       String @id @default(uuid())
-  nome     String
-  senha    String
-  email    String @unique
-  cpf      String @unique
-  whatsapp String
-  curso    String
-  role     Role   @default(USER)
-
-  avaliacoesFeitas    Avaliacao[] @relation("Avaliador")
-  avaliacoesRecebidas Avaliacao[] @relation("Avaliado")
-
-  status         StatusUsuario
-  dataNascimento DateTime
-
-  caronas  Carona[]
-  reservas Reserva[]
-  veiculos Veiculo[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  mediaAvaliacao  Float @default(0)
-  totalAvaliacoes Int   @default(0)
+  id                  String        @id @default(uuid())
+  nome                String
+  senha               String
+  email               String        @unique
+  cpf                 String        @unique
+  matricula           String?
+  curso               String
+  status              StatusUsuario
+  dataNascimento      DateTime
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  role                Role          @default(USER)
+  avaliacoesRecebidas Avaliacao[]   @relation("Avaliado")
+  avaliacoesFeitas    Avaliacao[]   @relation("Avaliador")
+  caronas             Carona[]
+  reservas            Reserva[]
+  veiculos            Veiculo[]
 }
 
 model Veiculo {
-  id      String   @id @default(uuid())
-  placa   String   @unique
-  marca   String
-  modelo  String
-  cor     String
-  caronas Carona[]
-
+  id             String   @id @default(uuid())
+  placa          String   @unique
+  marca          String
+  modelo         String
+  cor            String
   proprietarioId String
-  proprietario   Usuario @relation(fields: [proprietarioId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-enum StatusCarona {
-  AGENDADA
-  EM_ANDAMENTO
-  FINALIZADA
-  CANCELADA
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  caronas        Carona[]
+  proprietario   Usuario  @relation(fields: [proprietarioId], references: [id])
 }
 
 model Carona {
@@ -86,57 +55,72 @@ model Carona {
   assentosDisponiveis Int
   valorAjuda          Decimal?
   status              StatusCarona
-  reservas            Reserva[]
+  motoristaId         String
+  veiculoId           String
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  distanciaMetros     Int?
+  duracaoSegundos     Int?
+  latitudeDestino     Float?
+  latitudeOrigem      Float?
+  longitudeDestino    Float?
+  longitudeOrigem     Float?
+  rotaPolyline        String?
   avaliacaos          Avaliacao[]
-
-  motoristaId String
-  motorista   Usuario @relation(fields: [motoristaId], references: [id])
-  veiculoId   String
-  veiculo     Veiculo @relation(fields: [veiculoId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-enum StatusReserva {
-  PENDENTE
-  CONFIRMADA
-  CANCELADA
+  motorista           Usuario      @relation(fields: [motoristaId], references: [id])
+  veiculo             Veiculo      @relation(fields: [veiculoId], references: [id])
+  reservas            Reserva[]
 }
 
 model Reserva {
   id                String        @id @default(uuid())
   status            StatusReserva
   quantidadePessoas Int
-
-  caronaId   String
-  carona     Carona  @relation(fields: [caronaId], references: [id])
-  usuarioId  String
-  passageiro Usuario @relation(fields: [usuarioId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  caronaId          String
+  usuarioId         String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  carona            Carona        @relation(fields: [caronaId], references: [id])
+  passageiro        Usuario       @relation(fields: [usuarioId], references: [id])
 
   @@unique([caronaId, usuarioId])
 }
 
 model Avaliacao {
-  id String @id @default(uuid())
-
-  caronaId String
-  carona   Carona @relation(fields: [caronaId], references: [id])
-
+  id          String   @id @default(uuid())
+  caronaId    String
   avaliadorId String
-  avaliador   Usuario @relation("Avaliador", fields: [avaliadorId], references: [id])
-
-  avaliadoId String
-  avaliado   Usuario @relation("Avaliado", fields: [avaliadoId], references: [id])
-
-  nota       Int
-  comentario String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  avaliadoId  String
+  nota        Int
+  comentario  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  avaliado    Usuario  @relation("Avaliado", fields: [avaliadoId], references: [id])
+  avaliador   Usuario  @relation("Avaliador", fields: [avaliadorId], references: [id])
+  carona      Carona   @relation(fields: [caronaId], references: [id])
 
   @@unique([caronaId, avaliadorId, avaliadoId])
+}
+
+enum StatusUsuario {
+  ATIVO
+  INATIVO
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum StatusCarona {
+  AGENDADA
+  EM_ANDAMENTO
+  FINALIZADA
+  CANCELADA
+}
+
+enum StatusReserva {
+  PENDENTE
+  CONFIRMADA
+  CANCELADA
 }

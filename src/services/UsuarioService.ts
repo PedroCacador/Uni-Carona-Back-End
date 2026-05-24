@@ -1,8 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { Usuario } from '../generated/prisma/client';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
+import { isValidCPF } from '../utils/CpfValidator';
 
-export type CreateUsuarioDTO = Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'role' | 'mediaAvaliacao' | 'totalAvaliacoes'> & { role?: string };
+export type CreateUsuarioDTO = Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'role'> & { role?: string };
 export type UpdateUsuarioDTO = Partial<Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'email' | 'cpf' | 'status'>>;
 
 export class UsuarioService {
@@ -15,6 +16,10 @@ export class UsuarioService {
     if (!data.email || data.email.trim() === '') {
       throw new Error('E-mail não pode ser vazio.');
     }
+    
+    if (!data.cpf || !isValidCPF(data.cpf)) {
+      throw new Error('CPF inválido.');
+    }
 
     const emailEmUso = await this.usuarioRepository.findByEmail(data.email);
     if (emailEmUso) {
@@ -23,7 +28,7 @@ export class UsuarioService {
 
     const hashedPassword = await bcrypt.hash(data.senha, 10);
 
-    const novoUsuario: Omit<Usuario, "id" | "createdAt" | "updatedAt" | "mediaAvaliacao" | "totalAvaliacoes"> = {
+    const novoUsuario: Omit<Usuario, "id" | "createdAt" | "updatedAt"> = {
       ...data,
       dataNascimento: new Date(data.dataNascimento),
       senha: hashedPassword,

@@ -14,8 +14,8 @@ async function main() {
       nome: 'Alice Silva',
       senha: hashedPassword,
       email: 'alice@exemplo.com',
-      cpf: '111.111.111-11',
-      whatsapp: '11999999999',
+      cpf: '35060410006', // Valid CPF for testing
+      matricula: '20201001',
       curso: 'Ciência da Computação',
       status: 'ATIVO',
       dataNascimento: new Date('2000-01-01'),
@@ -30,8 +30,8 @@ async function main() {
       nome: 'Bob Souza',
       senha: hashedPassword,
       email: 'bob@exemplo.com',
-      cpf: '222.222.222-22',
-      whatsapp: '11888888888',
+      cpf: '20757270081', // Valid CPF for testing
+      matricula: '20201002',
       curso: 'Engenharia de Software',
       status: 'ATIVO',
       dataNascimento: new Date('1999-05-15'),
@@ -52,7 +52,8 @@ async function main() {
     },
   });
 
-  // Limpar caronas e reservas antigas para evitar erros de duplicidade ou FK no seed
+  // Limpar dados antigos na ordem correta para evitar erros de FK
+  await prisma.avaliacao.deleteMany({});
   await prisma.reserva.deleteMany({});
   await prisma.carona.deleteMany({});
 
@@ -69,10 +70,6 @@ async function main() {
       veiculoId: veiculoAlice.id,
     },
   });
-
-  // Criar uma reserva (Bob como passageiro)
-  // Limpar avaliações antigas
-  await prisma.avaliacao.deleteMany({});
 
   // Criar uma reserva (Bob como passageiro) na primeira carona
   await prisma.reserva.create({
@@ -116,15 +113,6 @@ async function main() {
       avaliadoId: alice.id,
       nota: 5,
       comentario: 'Excelente motorista, super pontual e gentil!',
-    },
-  });
-
-  // Atualiza as métricas da Alice
-  await prisma.usuario.update({
-    where: { id: alice.id },
-    data: {
-      mediaAvaliacao: 5,
-      totalAvaliacoes: 1,
     },
   });
 
