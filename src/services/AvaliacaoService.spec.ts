@@ -2,7 +2,6 @@ import { AvaliacaoService } from './AvaliacaoService';
 import { IAvaliacaoRepository } from '../repositories/IAvaliacaoRepository';
 import { CaronaRepository } from '../repositories/CaronaRepository';
 import { ReservaRepository } from '../repositories/ReservaRepository';
-import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { StatusCarona, StatusReserva } from '../generated/prisma/client';
 
 describe('AvaliacaoService', () => {
@@ -10,8 +9,6 @@ describe('AvaliacaoService', () => {
   let avaliacaoRepositoryMock: jest.Mocked<IAvaliacaoRepository>;
   let caronaRepositoryMock: jest.Mocked<CaronaRepository>;
   let reservaRepositoryMock: jest.Mocked<ReservaRepository>;
-  let usuarioRepositoryMock: jest.Mocked<IUsuarioRepository>;
-
   const mockAvaliacao = {
     id: '1',
     caronaId: 'carona1',
@@ -27,6 +24,13 @@ describe('AvaliacaoService', () => {
     id: 'carona1',
     origem: 'A',
     destino: 'B',
+    latitudeOrigem: null,
+    longitudeOrigem: null,
+    latitudeDestino: null,
+    longitudeDestino: null,
+    rotaPolyline: null,
+    distanciaMetros: null,
+    duracaoSegundos: null,
     dataHoraSaida: new Date(),
     assentosDisponiveis: 3,
     valorAjuda: null,
@@ -34,7 +38,7 @@ describe('AvaliacaoService', () => {
     motoristaId: 'user1',
     veiculoId: 'veiculo1',
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   const mockReserva = {
@@ -76,20 +80,10 @@ describe('AvaliacaoService', () => {
       delete: jest.fn()
     } as any;
 
-    usuarioRepositoryMock = {
-      create: jest.fn(),
-      findAll: jest.fn(),
-      findAllActive: jest.fn(),
-      findById: jest.fn(),
-      findByEmail: jest.fn(),
-      update: jest.fn()
-    };
-
     avaliacaoService = new AvaliacaoService(
       avaliacaoRepositoryMock,
       caronaRepositoryMock,
-      reservaRepositoryMock,
-      usuarioRepositoryMock
+      reservaRepositoryMock
     );
   });
 
@@ -136,23 +130,15 @@ describe('AvaliacaoService', () => {
       await expect(avaliacaoService.criarAvaliacao(createData)).rejects.toThrow('Esta avaliação já foi realizada.');
     });
 
-    it('Deve criar avaliação e atualizar a média do usuário avaliado com sucesso', async () => {
+    it('Deve criar avaliação com sucesso', async () => {
       caronaRepositoryMock.findById.mockResolvedValueOnce(mockCarona);
       reservaRepositoryMock.findByCaronaId.mockResolvedValueOnce([mockReserva as any]);
       avaliacaoRepositoryMock.findByCaronaAndUsers.mockResolvedValueOnce(null);
       avaliacaoRepositoryMock.create.mockResolvedValueOnce(mockAvaliacao);
-      
-      // Simula avaliações anteriores para o cálculo da média
-      avaliacaoRepositoryMock.findByAvaliadoId.mockResolvedValueOnce([mockAvaliacao]);
 
       const result = await avaliacaoService.criarAvaliacao(createData);
 
       expect(avaliacaoRepositoryMock.create).toHaveBeenCalledWith(createData);
-      expect(usuarioRepositoryMock.update).toHaveBeenCalledWith({
-        id: 'user2',
-        mediaAvaliacao: 5,
-        totalAvaliacoes: 1
-      });
       expect(result).toEqual(mockAvaliacao);
     });
   });

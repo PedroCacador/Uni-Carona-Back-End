@@ -1,16 +1,13 @@
 import { IAvaliacaoRepository } from '../repositories/IAvaliacaoRepository';
-import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { CaronaRepository } from '../repositories/CaronaRepository';
 import { ReservaRepository } from '../repositories/ReservaRepository';
-import { StatusCarona, StatusReserva } from '../generated/prisma/client';
-import { Avaliacao } from '../models/Avaliacao';
+import { Avaliacao, StatusCarona, StatusReserva } from '../generated/prisma/client';
 
 export class AvaliacaoService {
   constructor(
     private avaliacaoRepository: IAvaliacaoRepository,
     private caronaRepository: CaronaRepository,
-    private reservaRepository: ReservaRepository,
-    private usuarioRepository: IUsuarioRepository
+    private reservaRepository: ReservaRepository
   ) {}
 
   async criarAvaliacao(data: Omit<Avaliacao, "id" | "createdAt" | "updatedAt">): Promise<Avaliacao> {
@@ -70,22 +67,7 @@ export class AvaliacaoService {
       throw new Error('Esta avaliação já foi realizada.');
     }
 
-    const novaAvaliacao = await this.avaliacaoRepository.create(data);
-
-    // Atualizar as métricas do usuário avaliado
-    const todasAvaliacoes = await this.avaliacaoRepository.findByAvaliadoId(avaliadoId);
-    const totalAvaliacoes = todasAvaliacoes.length;
-    
-    const somaNotas = todasAvaliacoes.reduce((acc, curr) => acc + curr.nota, 0);
-    const mediaAvaliacao = totalAvaliacoes > 0 ? somaNotas / totalAvaliacoes : 0;
-
-    await this.usuarioRepository.update({
-      id: avaliadoId,
-      mediaAvaliacao,
-      totalAvaliacoes
-    });
-
-    return novaAvaliacao;
+    return this.avaliacaoRepository.create(data);
   }
 
   async findByAvaliadoId(usuarioId: string): Promise<Avaliacao[]> {

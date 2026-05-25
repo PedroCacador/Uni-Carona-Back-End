@@ -1,4 +1,4 @@
-import { Avaliacao } from '../models/Avaliacao';
+import { Avaliacao } from '../generated/prisma/client';
 
 export interface IAvaliacaoRepository {
   create(avaliacao: Omit<Avaliacao, "id" | "createdAt" | "updatedAt">): Promise<Avaliacao>;

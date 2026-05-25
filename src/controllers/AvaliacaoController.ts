@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AvaliacaoService } from '../services/AvaliacaoService';
-import { Avaliacao } from '../models/Avaliacao';
+import { Avaliacao } from '../generated/prisma/client';
 
 export class AvaliacaoController {
   constructor(private avaliacaoService: AvaliacaoService) { }

@@ -42,6 +42,48 @@
               "path": ["auth", "login"]
             }
           }
+        },
+        {
+          "name": "Esqueci Senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@exemplo.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/esqueci-senha",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "esqueci-senha"]
+            }
+          }
+        },
+        {
+          "name": "Redefinir Senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"TOKEN_RECEBIDO\",\n  \"novaSenha\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/redefinir-senha",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "redefinir-senha"]
+            }
+          }
         }
       ]
     },

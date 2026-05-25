@@ -4,7 +4,7 @@ import { Usuario } from '../generated/prisma/client';
 
 export class UsuarioRepository implements IUsuarioRepository {
 
-  async create(usuario: Omit<Usuario, "id" | "createdAt" | "updatedAt" | "mediaAvaliacao" | "totalAvaliacoes">): Promise<Usuario> {
+  async create(usuario: Omit<Usuario, 'id' | 'createdAt' | 'updatedAt'>): Promise<Usuario> {
     return prisma.usuario.create({
       data: usuario
     });
@@ -29,6 +29,16 @@ export class UsuarioRepository implements IUsuarioRepository {
   async findByEmail(email: string): Promise<Usuario | null> {
     return prisma.usuario.findUnique({
       where: { email }
+    });
+  }
+
+  async findByResetPasswordToken(tokenHash: string): Promise<Usuario | null> {
+    return prisma.usuario.findFirst({
+      where: {
+        resetPasswordToken: tokenHash,
+        resetPasswordExpires: { gt: new Date() },
+        status: 'ATIVO',
+      },
     });
   }
 

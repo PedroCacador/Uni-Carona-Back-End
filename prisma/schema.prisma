@@ -20,6 +20,10 @@ model Usuario {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   role                Role          @default(USER)
+  resetPasswordToken  String?
+  resetPasswordExpires DateTime?
+
+  @@index([resetPasswordToken])
   avaliacoesRecebidas Avaliacao[]   @relation("Avaliado")
   avaliacoesFeitas    Avaliacao[]   @relation("Avaliador")
   caronas             Carona[]
@@ -59,13 +63,6 @@ model Carona {
   veiculoId           String
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
-  distanciaMetros     Int?
-  duracaoSegundos     Int?
-  latitudeDestino     Float?
-  latitudeOrigem      Float?
-  longitudeDestino    Float?
-  longitudeOrigem     Float?
-  rotaPolyline        String?
   avaliacaos          Avaliacao[]
   motorista           Usuario      @relation(fields: [motoristaId], references: [id])
   veiculo             Veiculo      @relation(fields: [veiculoId], references: [id])

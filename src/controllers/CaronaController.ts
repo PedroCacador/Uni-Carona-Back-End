@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { CaronaService } from '../services/CaronaService';
 import { Carona, StatusCarona, Usuario, Veiculo } from '../generated/prisma/client';
+import { sanitizeUsuario, UsuarioPublico } from '../utils/UsuarioSanitizer';
 
 type CaronaComRelacoes = Carona & { motorista?: Usuario | null; veiculo?: Veiculo | null };
 
@@ -9,19 +10,14 @@ export class CaronaController {
     
   }
 
-  private sanitizeUsuario(u: Usuario): Omit<Usuario, 'senha'> {
-    const { senha: _s, ...safe } = u;
-    return safe;
-  }
-
   private sanitize(carona: CaronaComRelacoes): Omit<CaronaComRelacoes, 'createdAt' | 'updatedAt' | 'motorista' | 'veiculo'> & {
-    motorista?: Omit<Usuario, 'senha'>;
+    motorista?: UsuarioPublico;
     veiculo?: Veiculo;
   } {
     const { createdAt, updatedAt, motorista, veiculo, ...rest } = carona;
     return {
       ...rest,
-      ...(motorista ? { motorista: this.sanitizeUsuario(motorista) } : {}),
+      ...(motorista ? { motorista: sanitizeUsuario(motorista) } : {}),
       ...(veiculo ? { veiculo } : {}),
     };
   }
@@ -119,7 +115,6 @@ export class CaronaController {
       const safeCaronas = caronas.map(c => this.sanitize(c as CaronaComRelacoes));
       res.json(safeCaronas);
     } catch (error: any) {
-      console.log(error);
       res.status(400).json({ message: error.message });
     }
   }

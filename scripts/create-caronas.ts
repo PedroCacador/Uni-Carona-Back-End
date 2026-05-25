@@ -1,13 +1,12 @@
-import { prisma } from './database/db';
+import { prisma } from '../src/database/db';
 
 async function main() {
   const alice = await prisma.usuario.findUnique({ where: { email: 'alice@exemplo.com' } });
-  const bob = await prisma.usuario.findUnique({ where: { email: 'bob@exemplo.com' } });
   const veiculo = await prisma.veiculo.findUnique({ where: { placa: 'ABC-1234' } });
 
-  if (!alice || !bob || !veiculo) {
-    console.log("Usuários ou veículo padrão não encontrados. Por favor rode os seeds primeiro.");
-    return;
+  if (!alice || !veiculo) {
+    console.error('Usuários ou veículo padrão não encontrados. Execute: npx prisma db seed');
+    process.exit(1);
   }
 
   for (let i = 1; i <= 3; i++) {
@@ -17,15 +16,22 @@ async function main() {
         destino: `Destino Teste ${i}`,
         dataHoraSaida: new Date(Date.now() + 1000 * 60 * 60 * 24 * i),
         assentosDisponiveis: 4,
-        valorAjuda: 12.50,
+        valorAjuda: 12.5,
         status: 'AGENDADA',
         motoristaId: alice.id,
         veiculoId: veiculo.id,
-      }
+      },
     });
   }
 
-  console.log("3 novas caronas criadas com sucesso!");
+  console.log('3 novas caronas criadas com sucesso.');
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+  .catch((error) => {
+    console.error('Erro ao criar caronas:', error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

@@ -3,8 +3,13 @@ import { Usuario } from '../generated/prisma/client';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { isValidCPF } from '../utils/CpfValidator';
 
-export type CreateUsuarioDTO = Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'role'> & { role?: string };
-export type UpdateUsuarioDTO = Partial<Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'email' | 'cpf' | 'status'>>;
+export type CreateUsuarioDTO = Omit<
+  Usuario,
+  'id' | 'createdAt' | 'updatedAt' | 'status' | 'role' | 'resetPasswordToken' | 'resetPasswordExpires'
+> & { role?: string };
+export type UpdateUsuarioDTO = Partial<
+  Omit<Usuario, 'id' | 'createdAt' | 'updatedAt' | 'email' | 'cpf' | 'status' | 'resetPasswordToken' | 'resetPasswordExpires'>
+>;
 
 export class UsuarioService {
   constructor(private readonly usuarioRepository: IUsuarioRepository) {}
@@ -28,12 +33,14 @@ export class UsuarioService {
 
     const hashedPassword = await bcrypt.hash(data.senha, 10);
 
-    const novoUsuario: Omit<Usuario, "id" | "createdAt" | "updatedAt"> = {
+    const novoUsuario: Omit<Usuario, 'id' | 'createdAt' | 'updatedAt'> = {
       ...data,
       dataNascimento: new Date(data.dataNascimento),
       senha: hashedPassword,
       status: 'ATIVO',
-      role: (data.role as any) || 'USER',
+      role: (data.role as Usuario['role']) || 'USER',
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
     };
 
     return this.usuarioRepository.create(novoUsuario);

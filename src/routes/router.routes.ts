@@ -8,7 +8,6 @@ import { veiculoRoutes } from "./veiculo.routes";
 import { authRoutes } from "./auth.routes";
 import { mapsRoutes } from "./maps.routes";
 import { avaliacaoRoutes } from "./avaliacao.routes";
-import { mapsRoutes } from "./maps.routes";
 
 const router = Router();
 
@@ -20,6 +19,5 @@ router.use("/veiculos", veiculoRoutes);
 router.use("/auth", authRoutes);
 router.use("/maps", mapsRoutes);
 router.use("/avaliacoes", avaliacaoRoutes);
-router.use("/maps", mapsRoutes);
 
 export default router;

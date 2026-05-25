@@ -12,14 +12,16 @@ describe('UsuarioService', () => {
     id: '1',
     nome: 'João da Silva',
     email: 'joao@teste.com',
-    cpf: '12345678900',
-    whatsapp: '11999999999',
+    cpf: '11144477735',
+    matricula: null,
     curso: 'Engenharia',
     senha: 'hash_senha123',
     dataNascimento: mockDate,
     status: 'ATIVO',
     role: 'USER',
-    mediaAvaliacao: 0, totalAvaliacoes: 0, createdAt: new Date(),
+    resetPasswordToken: null,
+    resetPasswordExpires: null,
+    createdAt: new Date(),
     updatedAt: new Date(),
   };
 
@@ -30,6 +32,7 @@ describe('UsuarioService', () => {
       findAllActive: jest.fn(),
       findById: jest.fn(),
       findByEmail: jest.fn(),
+      findByResetPasswordToken: jest.fn(),
       update: jest.fn(),
     };
     usuarioService = new UsuarioService(usuarioRepositoryMock);
@@ -39,8 +42,8 @@ describe('UsuarioService', () => {
     const createDto: CreateUsuarioDTO = {
       nome: 'João da Silva',
       email: 'joao@teste.com',
-      cpf: '12345678900',
-      whatsapp: '11999999999',
+      cpf: '11144477735',
+      matricula: null,
       curso: 'Engenharia',
       senha: 'senha123',
       dataNascimento: mockDate,
@@ -74,6 +77,8 @@ describe('UsuarioService', () => {
         senha: expect.any(String),
         status: 'ATIVO',
         role: 'USER',
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
       });
       expect(result).toEqual(mockUsuario);
     });

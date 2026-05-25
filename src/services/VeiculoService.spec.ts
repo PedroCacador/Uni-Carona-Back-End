@@ -24,14 +24,16 @@ describe('VeiculoService', () => {
     nome: 'João da Silva',
     email: 'joao@teste.com',
     cpf: '12345678900',
-    whatsapp: '11999999999',
+    matricula: null,
     curso: 'Engenharia',
     senha: 'hash_senha123',
     dataNascimento: new Date(),
     status: 'ATIVO' as const,
     role: 'USER' as const,
-    mediaAvaliacao: 0, totalAvaliacoes: 0, createdAt: new Date(),
-    updatedAt: new Date()
+    resetPasswordToken: null,
+    resetPasswordExpires: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(() => {
@@ -51,6 +53,7 @@ describe('VeiculoService', () => {
       findAllActive: jest.fn(),
       findById: jest.fn(),
       findByEmail: jest.fn(),
+      findByResetPasswordToken: jest.fn(),
       update: jest.fn()
     };
 

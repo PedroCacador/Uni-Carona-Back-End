@@ -1,13 +1,22 @@
 {
-  "name": "unicarona---back-end",
+  "name": "unicarona-back-end",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API REST do UniCarona — sistema de caronas universitárias",
+  "main": "dist/server.js",
   "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "test": "jest",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
+    "test:auth": "jest src/services/AuthService.spec.ts src/services/AuthService.integration.spec.ts src/controllers/AuthController.spec.ts src/utils/EmailValidator.spec.ts src/utils/ResetTokenHelper.spec.ts src/utils/UsuarioSanitizer.spec.ts src/utils/PayloadValidator.spec.ts",
+    "lint": "tsc --noEmit",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "script:create-caronas": "npx ts-node scripts/create-caronas.ts"
   },
-  "keywords": [],
+  "keywords": ["carona", "universidade", "express", "typescript", "prisma"],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -30,8 +39,10 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.2",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^6.0.3",
     "jest": "^30.3.0",
     "prisma": "^7.7.0",
+    "supertest": "^7.1.0",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
@@ -39,5 +50,8 @@
   },
   "prisma": {
     "seed": "npx ts-node prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

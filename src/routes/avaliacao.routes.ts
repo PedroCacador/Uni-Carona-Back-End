@@ -4,18 +4,15 @@ import { AvaliacaoService } from '../services/AvaliacaoService';
 import { AvaliacaoRepository } from '../repositories/AvaliacaoRepository';
 import { CaronaRepository } from '../repositories/CaronaRepository';
 import { ReservaRepository } from '../repositories/ReservaRepository';
-import { UsuarioRepository } from '../repositories/UsuarioRepository';
 
 const avaliacaoRepository = new AvaliacaoRepository();
 const caronaRepository = new CaronaRepository();
 const reservaRepository = new ReservaRepository();
-const usuarioRepository = new UsuarioRepository();
 
 const avaliacaoService = new AvaliacaoService(
   avaliacaoRepository,
   caronaRepository,
-  reservaRepository,
-  usuarioRepository
+  reservaRepository
 );
 const avaliacaoController = new AvaliacaoController(avaliacaoService);
 

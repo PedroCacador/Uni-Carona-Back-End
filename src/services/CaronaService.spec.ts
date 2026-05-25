@@ -107,7 +107,7 @@ describe('CaronaService', () => {
         longitudeOrigem: -46.6333,
         latitudeDestino: -23.5515,
         longitudeDestino: -46.6343,
-        rotaPolyline: 'polyline_abc',
+        rotaPolyline: JSON.stringify([{ latitude: -23.5505, longitude: -46.6333 }]),
         distanciaMetros: 5000,
         duracaoSegundos: 600
       }));
