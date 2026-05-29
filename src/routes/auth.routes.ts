@@ -13,6 +13,7 @@ const controller = new AuthController(service);
 
 authRoutes.post('/login', controller.login.bind(controller));
 authRoutes.post('/esqueci-senha', controller.esqueciSenha.bind(controller));
+authRoutes.post('/validar-codigo', controller.validarCodigo.bind(controller));
 authRoutes.post('/redefinir-senha', controller.redefinirSenha.bind(controller));
 
 export { authRoutes };

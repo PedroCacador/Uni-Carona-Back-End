@@ -11,6 +11,7 @@ describe('AuthController (integração HTTP)', () => {
     authServiceMock = {
       login: jest.fn(),
       esqueciSenha: jest.fn(),
+      validarCodigo: jest.fn(),
       redefinirSenha: jest.fn(),
     } as unknown as jest.Mocked<AuthService>;
 
@@ -18,6 +19,7 @@ describe('AuthController (integração HTTP)', () => {
     app = express();
     app.use(express.json());
     app.post('/auth/esqueci-senha', controller.esqueciSenha.bind(controller));
+    app.post('/auth/validar-codigo', controller.validarCodigo.bind(controller));
     app.post('/auth/redefinir-senha', controller.redefinirSenha.bind(controller));
   });
 
@@ -54,6 +56,40 @@ describe('AuthController (integração HTTP)', () => {
 
       expect(response.status).toBe(200);
       expect(authServiceMock.esqueciSenha).toHaveBeenCalledWith({ email: sqlPayload });
+    });
+  });
+
+  describe('POST /auth/validar-codigo', () => {
+    it('Deve retornar 200 quando o código for válido', async () => {
+      authServiceMock.validarCodigo.mockResolvedValueOnce({ valid: true });
+
+      const response = await request(app)
+        .post('/auth/validar-codigo')
+        .send({ email: 'usuario@email.com', codigo: 'token_valido' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ valid: true });
+    });
+
+    it('Deve retornar 400 para código com tipo inválido sem chamar o service', async () => {
+      const response = await request(app)
+        .post('/auth/validar-codigo')
+        .send({ codigo: 123 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Código inválido.');
+      expect(authServiceMock.validarCodigo).not.toHaveBeenCalled();
+    });
+
+    it('Deve retornar 400 quando o código for inválido ou expirado', async () => {
+      authServiceMock.validarCodigo.mockRejectedValueOnce(new Error('Código inválido ou expirado.'));
+
+      const response = await request(app)
+        .post('/auth/validar-codigo')
+        .send({ email: 'usuario@email.com', codigo: 'token_errado' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Código inválido ou expirado.');
     });
   });
 

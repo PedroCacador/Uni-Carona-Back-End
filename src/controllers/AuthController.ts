@@ -25,6 +25,17 @@ export class AuthController {
     }
   }
 
+  async validarCodigo(req: Request, res: Response) {
+    try {
+      const codigo = assertStringField(req.body?.codigo, 'Código');
+      const email = typeof req.body?.email === 'string' ? req.body.email : undefined;
+      const result = await this.authService.validarCodigo({ email, codigo });
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
   async redefinirSenha(req: Request, res: Response) {
     try {
       const token = assertStringField(req.body?.token, 'Token');

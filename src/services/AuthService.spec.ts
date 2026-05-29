@@ -1,6 +1,11 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { AuthService, ESQUECI_SENHA_SUCCESS_MESSAGE, REDEFINIR_SENHA_SUCCESS_MESSAGE } from './AuthService';
+import {
+  AuthService,
+  ESQUECI_SENHA_SUCCESS_MESSAGE,
+  REDEFINIR_SENHA_SUCCESS_MESSAGE,
+  CODIGO_INVALIDO_MESSAGE,
+} from './AuthService';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { IEmailService } from './IEmailService';
 import { Usuario } from '../generated/prisma/client';
@@ -145,6 +150,52 @@ describe('AuthService', () => {
         'joao@teste.com',
         expect.any(String)
       );
+    });
+  });
+
+  describe('validarCodigo', () => {
+    const rawToken = 'abc123token';
+    const tokenHash = hashResetToken(rawToken);
+
+    const usuarioComToken: Usuario = {
+      ...mockUsuario,
+      resetPasswordToken: tokenHash,
+      resetPasswordExpires: new Date(Date.now() + 15 * 60 * 1000),
+    };
+
+    it('Deve lançar erro se o código for vazio', async () => {
+      await expect(authService.validarCodigo({ codigo: '' })).rejects.toThrow('Código é obrigatório.');
+      await expect(authService.validarCodigo({ codigo: '   ' })).rejects.toThrow('Código é obrigatório.');
+    });
+
+    it('Deve lançar erro se o código não for string', async () => {
+      await expect(
+        authService.validarCodigo({ codigo: 123 as unknown as string })
+      ).rejects.toThrow('Código é obrigatório.');
+    });
+
+    it('Deve lançar erro se o código for inválido ou expirado', async () => {
+      usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce(null);
+
+      await expect(authService.validarCodigo({ codigo: rawToken })).rejects.toThrow(CODIGO_INVALIDO_MESSAGE);
+      expect(usuarioRepositoryMock.findByResetPasswordToken).toHaveBeenCalledWith(tokenHash);
+    });
+
+    it('Deve lançar erro se o código não pertencer ao e-mail informado', async () => {
+      usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce(usuarioComToken);
+
+      await expect(
+        authService.validarCodigo({ email: 'outro@teste.com', codigo: rawToken })
+      ).rejects.toThrow(CODIGO_INVALIDO_MESSAGE);
+    });
+
+    it('Deve validar com sucesso SEM consumir o token (sem update)', async () => {
+      usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce(usuarioComToken);
+
+      const result = await authService.validarCodigo({ email: '  Joao@Teste.com  ', codigo: rawToken });
+
+      expect(result).toEqual({ valid: true });
+      expect(usuarioRepositoryMock.update).not.toHaveBeenCalled();
     });
   });
 

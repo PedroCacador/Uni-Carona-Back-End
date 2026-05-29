@@ -21,12 +21,19 @@ export interface RedefinirSenhaDTO {
   novaSenha: string;
 }
 
+export interface ValidarCodigoDTO {
+  email?: string;
+  codigo: string;
+}
+
 const DEFAULT_RESET_EXPIRES_MINUTES = 15;
 
 export const ESQUECI_SENHA_SUCCESS_MESSAGE =
   'Se o e-mail existir, um link de recuperação foi enviado.';
 
 export const REDEFINIR_SENHA_SUCCESS_MESSAGE = 'Senha redefinida com sucesso.';
+
+export const CODIGO_INVALIDO_MESSAGE = 'Código inválido ou expirado.';
 
 export class AuthService {
   constructor(
@@ -93,6 +100,28 @@ export class AuthService {
     }
 
     return { message: ESQUECI_SENHA_SUCCESS_MESSAGE };
+  }
+
+  async validarCodigo({ email, codigo }: ValidarCodigoDTO): Promise<{ valid: true }> {
+    if (typeof codigo !== 'string' || codigo.trim() === '') {
+      throw new Error('Código é obrigatório.');
+    }
+
+    const tokenHash = hashResetToken(codigo);
+    const usuario = await this.usuarioRepository.findByResetPasswordToken(tokenHash);
+
+    // findByResetPasswordToken já garante token existente, não expirado e usuário ATIVO.
+    if (!usuario) {
+      throw new Error(CODIGO_INVALIDO_MESSAGE);
+    }
+
+    // Garante que o código pertence ao e-mail informado, sem revelar qual parte falhou.
+    if (typeof email === 'string' && email.trim() !== '' && normalizeEmail(email) !== usuario.email) {
+      throw new Error(CODIGO_INVALIDO_MESSAGE);
+    }
+
+    // Não consome o token: a invalidação ocorre apenas em redefinirSenha.
+    return { valid: true };
   }
 
   async redefinirSenha({ token, novaSenha }: RedefinirSenhaDTO): Promise<{ message: string }> {
