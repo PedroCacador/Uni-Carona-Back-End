@@ -8,7 +8,7 @@ API REST para o **UniCarona**, aplicativo de caronas universitárias que conecta
 |------|--------|
 | API REST | Funcional |
 | Autenticação JWT | Funcional |
-| Recuperação de senha | Funcional (e-mail mock em dev) |
+| Recuperação de senha | Funcional (Resend em production, mock em dev) |
 | Testes automatizados | 80+ testes passando |
 | Pronto para GitHub | Sim |
 | Pronto para produção | Parcial — ver [Riscos e melhorias](#riscos-e-melhorias) |
@@ -125,12 +125,13 @@ Copie `.env.example` para `.env`:
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
 | `DATABASE_URL` | Sim | Connection string PostgreSQL |
-| `JWT_SECRET` | Sim | Chave secreta para tokens JWT |
+| `JWT_SECRET` | Sim | Chave secreta para tokens JWT (não pode ficar vazia; validada na inicialização) |
 | `PORT` | Não | Porta HTTP (padrão: 3333) |
 | `JWT_EXPIRES_IN` | Não | Expiração do JWT (padrão: 1d) |
-| `RESET_PASSWORD_EXPIRES_MINUTES` | Não | Expiração do token de reset (padrão: 15) |
-| `FRONTEND_URL` | Não | URL base para link de recuperação |
-| `MAIL_*` | Não | Reservado para integração de e-mail futura |
+| `RESET_PASSWORD_EXPIRES_MINUTES` | Não | Expiração do código de recuperação (padrão: 15) |
+| `RESEND_API_KEY` | Sim em `NODE_ENV=production` | API Key do Resend |
+| `MAIL_FROM` | Sim em `NODE_ENV=production` | Remetente (ex.: `UniCarona <onboarding@resend.dev>`) |
+| `NODE_ENV` | Não | `development` = mock; `production` = Resend |
 
 > **Nunca** commite o arquivo `.env` — ele está no `.gitignore`.
 
@@ -170,8 +171,9 @@ Back_end/
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | POST | `/auth/login` | Login com e-mail e senha |
-| POST | `/auth/esqueci-senha` | Solicitar recuperação de senha |
-| POST | `/auth/redefinir-senha` | Redefinir senha com token |
+| POST | `/auth/esqueci-senha` | Solicitar código de recuperação por e-mail |
+| POST | `/auth/validar-codigo` | Validar código de 6 dígitos (opcional: `email`) |
+| POST | `/auth/redefinir-senha` | Redefinir senha com código + nova senha |
 
 ### Usuários
 
@@ -216,11 +218,49 @@ Resposta (sempre genérica — anti-enumeração):
 
 ```json
 {
-  "message": "Se o e-mail existir, um link de recuperação foi enviado."
+  "message": "Se o e-mail existir, um código de recuperação foi enviado."
 }
 ```
 
-> Em desenvolvimento, o link aparece no console do servidor (`MockEmailService`).
+> Em `NODE_ENV=development`, o envio é simulado (`MockEmailService`). Em `NODE_ENV=production`, o e-mail é enviado via **Resend** (`ResendEmailService`) com o código de 6 dígitos (sem link).
+
+### Configurar Resend (production)
+
+1. Crie conta em [resend.com](https://resend.com).
+2. Gere API Key em [resend.com/api-keys](https://resend.com/api-keys).
+3. Para testes, use `onboarding@resend.dev` como remetente. Para produção, verifique seu domínio no dashboard.
+4. Configure no `.env`:
+
+```env
+NODE_ENV=production
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxx
+MAIL_FROM=UniCarona <onboarding@resend.dev>
+```
+
+### Testar localmente
+
+- **Sem Resend:** `NODE_ENV=development` → `POST /auth/esqueci-senha` e logs `[MockEmailService]`.
+- **Com Resend:** `NODE_ENV=production` + `RESEND_API_KEY` + `MAIL_FROM`, reinicie o servidor e teste o mesmo endpoint.
+
+### Validar código (mobile)
+
+```http
+POST /auth/validar-codigo
+Content-Type: application/json
+
+{
+  "codigo": "123456",
+  "email": "usuario@email.com"
+}
+```
+
+Resposta quando válido:
+
+```json
+{ "valid": true }
+```
+
+> O campo `email` é opcional; quando informado, o código deve pertencer a esse usuário.
 
 ### Redefinir senha
 
@@ -229,10 +269,12 @@ POST /auth/redefinir-senha
 Content-Type: application/json
 
 {
-  "token": "TOKEN_RECEBIDO_NO_EMAIL",
+  "codigo": "123456",
   "novaSenha": "nova_senha_123"
 }
 ```
+
+> O controller também aceita `token` como alias de `codigo` por compatibilidade.
 
 ### Health check
 
@@ -246,10 +288,11 @@ GET /health
 
 1. Usuário envia e-mail em `POST /auth/esqueci-senha`
 2. Sistema valida formato, busca usuário ativo (sem revelar existência)
-3. Gera token criptográfico (32 bytes), armazena **hash SHA-256** + expiração
-4. Envia link por e-mail (mock em dev)
-5. Usuário envia token + nova senha em `POST /auth/redefinir-senha`
-6. Senha atualizada com bcrypt, token invalidado (uso único)
+3. Gera código numérico de 6 dígitos (`crypto.randomInt`), armazena **hash SHA-256** + expiração
+4. Envia o código por e-mail (mock em dev ou Resend em production)
+5. App mobile valida em `POST /auth/validar-codigo` (opcional, não consome o código)
+6. Usuário envia código + nova senha em `POST /auth/redefinir-senha`
+7. Senha atualizada com bcrypt; hash do código invalidado (uso único)
 
 ---
 
@@ -258,7 +301,7 @@ GET /health
 | Item | Prioridade |
 |------|------------|
 | Rate limiting nos endpoints de auth | Alta |
-| Provedor de e-mail real (SendGrid/SMTP) | Alta |
+| Fila/retry de e-mails em falha transitória | Média |
 | CI/CD com GitHub Actions | Média |
 | Normalizar e-mail no cadastro | Média |
 

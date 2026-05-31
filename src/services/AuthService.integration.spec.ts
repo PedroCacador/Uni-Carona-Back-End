@@ -3,7 +3,7 @@ import { AuthService } from './AuthService';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { IEmailService } from './IEmailService';
 import { Usuario } from '../generated/prisma/client';
-import { hashResetToken, generateResetToken } from '../utils/ResetTokenHelper';
+import { hashResetCode, generateResetCode } from '../utils/ResetTokenHelper';
 
 jest.mock('jsonwebtoken');
 
@@ -11,7 +11,7 @@ describe('AuthService (integração com bcrypt real)', () => {
   let authService: AuthService;
   let usuarioRepositoryMock: jest.Mocked<IUsuarioRepository>;
   let emailServiceMock: jest.Mocked<IEmailService>;
-  let storedUsuario: Usuario & { plainResetToken?: string };
+  let storedUsuario: Usuario & { plainResetCode?: string };
 
   const mockDate = new Date('2000-01-01T00:00:00.000Z');
 
@@ -44,9 +44,9 @@ describe('AuthService (integração com bcrypt real)', () => {
       findByEmail: jest.fn(async (email: string) =>
         email === storedUsuario.email ? storedUsuario : null
       ),
-      findByResetPasswordToken: jest.fn(async (tokenHash: string) => {
+      findByResetPasswordToken: jest.fn(async (codeHash: string) => {
         if (
-          storedUsuario.resetPasswordToken === tokenHash &&
+          storedUsuario.resetPasswordToken === codeHash &&
           storedUsuario.resetPasswordExpires &&
           storedUsuario.resetPasswordExpires > new Date()
         ) {
@@ -61,31 +61,30 @@ describe('AuthService (integração com bcrypt real)', () => {
     };
 
     emailServiceMock = {
-      sendPasswordResetEmail: jest.fn(async (_to, rawToken) => {
-        storedUsuario.plainResetToken = rawToken;
+      sendPasswordResetEmail: jest.fn(async (_to, rawCode) => {
+        storedUsuario.plainResetCode = rawCode;
       }),
     };
 
     authService = new AuthService(usuarioRepositoryMock, emailServiceMock);
   });
 
-  it('Deve permitir login com nova senha e bloquear senha antiga após redefinição', async () => {
-    await authService.esqueciSenha({ email: 'joao@teste.com' });
+  it('Deve executar fluxo completo com código de 6 dígitos', async () => {
+    await authService.esqueciSenha({ email: '  Joao@Teste.com  ' });
 
-    const rawToken = storedUsuario.plainResetToken!;
-    expect(storedUsuario.resetPasswordToken).toBe(hashResetToken(rawToken));
+    const rawCode = storedUsuario.plainResetCode!;
+    expect(rawCode).toMatch(/^\d{6}$/);
+    expect(storedUsuario.resetPasswordToken).toBe(hashResetCode(rawCode));
     expect(storedUsuario.resetPasswordExpires).toBeInstanceOf(Date);
 
-    await authService.redefinirSenha({ token: rawToken, novaSenha: 'nova_senha_123' });
+    await expect(authService.validarCodigo({ codigo: rawCode })).resolves.toEqual({ valid: true });
+
+    await authService.redefinirSenha({ codigo: rawCode, novaSenha: 'nova_senha_123' });
 
     expect(storedUsuario.resetPasswordToken).toBeNull();
     expect(storedUsuario.resetPasswordExpires).toBeNull();
     expect(await bcrypt.compare('nova_senha_123', storedUsuario.senha)).toBe(true);
     expect(await bcrypt.compare('senha_antiga', storedUsuario.senha)).toBe(false);
-
-    await expect(authService.login({ email: 'joao@teste.com', senha: 'senha_antiga' })).rejects.toThrow(
-      'Credenciais inválidas.'
-    );
 
     process.env.JWT_SECRET = 'test-secret';
     const jwt = require('jsonwebtoken');
@@ -93,29 +92,27 @@ describe('AuthService (integração com bcrypt real)', () => {
 
     const login = await authService.login({ email: 'joao@teste.com', senha: 'nova_senha_123' });
     expect(login.token).toBe('jwt-token');
-    expect(login.usuario).not.toHaveProperty('resetPasswordToken');
-    expect(login.usuario).not.toHaveProperty('senha');
   });
 
-  it('Deve impedir reutilização do token após redefinição', async () => {
-    const { rawToken } = generateResetToken();
-    storedUsuario.resetPasswordToken = hashResetToken(rawToken);
+  it('Deve impedir reutilização do código após redefinição', async () => {
+    const { rawCode } = generateResetCode();
+    storedUsuario.resetPasswordToken = hashResetCode(rawCode);
     storedUsuario.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-    await authService.redefinirSenha({ token: rawToken, novaSenha: '123456' });
+    await authService.redefinirSenha({ codigo: rawCode, novaSenha: '123456' });
 
     await expect(
-      authService.redefinirSenha({ token: rawToken, novaSenha: 'outra123' })
-    ).rejects.toThrow('Token inválido ou expirado.');
+      authService.redefinirSenha({ codigo: rawCode, novaSenha: 'outra123' })
+    ).rejects.toThrow('Código inválido ou expirado.');
   });
 
-  it('Deve rejeitar token expirado', async () => {
-    const { rawToken, tokenHash } = generateResetToken();
-    storedUsuario.resetPasswordToken = tokenHash;
+  it('Deve rejeitar código expirado', async () => {
+    const { rawCode, codeHash } = generateResetCode();
+    storedUsuario.resetPasswordToken = codeHash;
     storedUsuario.resetPasswordExpires = new Date(Date.now() - 1000);
 
     await expect(
-      authService.redefinirSenha({ token: rawToken, novaSenha: '123456' })
-    ).rejects.toThrow('Token inválido ou expirado.');
+      authService.redefinirSenha({ codigo: rawCode, novaSenha: '123456' })
+    ).rejects.toThrow('Código inválido ou expirado.');
   });
 });

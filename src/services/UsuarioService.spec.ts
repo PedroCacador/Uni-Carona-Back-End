@@ -65,6 +65,50 @@ describe('UsuarioService', () => {
       expect(usuarioRepositoryMock.findByEmail).toHaveBeenCalledWith(createDto.email);
     });
 
+    it('Deve lançar erro se o formato do e-mail for inválido', async () => {
+      await expect(usuarioService.create({ ...createDto, email: 'email-invalido' })).rejects.toThrow(
+        'E-mail inválido.'
+      );
+    });
+
+    it('Deve lançar erro se a senha tiver menos de 6 caracteres', async () => {
+      await expect(usuarioService.create({ ...createDto, senha: '123' })).rejects.toThrow(
+        'A senha deve ter no mínimo 6 caracteres.'
+      );
+    });
+
+    it('Deve normalizar e-mail no cadastro (trim e lowercase)', async () => {
+      usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(null);
+      usuarioRepositoryMock.create.mockResolvedValueOnce(mockUsuario);
+
+      await usuarioService.create({ ...createDto, email: '  Joao@Teste.com  ' });
+
+      expect(usuarioRepositoryMock.findByEmail).toHaveBeenCalledWith('joao@teste.com');
+      expect(usuarioRepositoryMock.create).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'joao@teste.com' })
+      );
+    });
+
+    it('Deve mapear erro de CPF duplicado do Prisma para mensagem amigável', async () => {
+      usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(null);
+      usuarioRepositoryMock.create.mockRejectedValueOnce({
+        code: 'P2002',
+        meta: { target: ['cpf'] },
+      });
+
+      await expect(usuarioService.create(createDto)).rejects.toThrow('CPF já está em uso.');
+    });
+
+    it('Deve mapear erro de e-mail duplicado do Prisma para mensagem amigável', async () => {
+      usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(null);
+      usuarioRepositoryMock.create.mockRejectedValueOnce({
+        code: 'P2002',
+        meta: { target: ['email'] },
+      });
+
+      await expect(usuarioService.create(createDto)).rejects.toThrow('E-mail já está em uso.');
+    });
+
     it('Deve criar um usuário com sucesso', async () => {
       usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(null);
       usuarioRepositoryMock.create.mockResolvedValueOnce(mockUsuario);
@@ -74,6 +118,7 @@ describe('UsuarioService', () => {
       expect(usuarioRepositoryMock.findByEmail).toHaveBeenCalledWith(createDto.email);
       expect(usuarioRepositoryMock.create).toHaveBeenCalledWith({
         ...createDto,
+        email: createDto.email,
         senha: expect.any(String),
         status: 'ATIVO',
         role: 'USER',

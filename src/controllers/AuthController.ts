@@ -38,9 +38,10 @@ export class AuthController {
 
   async redefinirSenha(req: Request, res: Response) {
     try {
-      const token = assertStringField(req.body?.token, 'Token');
+      const codigoRaw = req.body?.codigo ?? req.body?.token;
+      const codigo = assertStringField(codigoRaw, 'Código');
       const novaSenha = assertStringField(req.body?.novaSenha, 'Nova senha');
-      const result = await this.authService.redefinirSenha({ token, novaSenha });
+      const result = await this.authService.redefinirSenha({ codigo, novaSenha });
       res.json(result);
     } catch (error: any) {
       res.status(400).json({ message: error.message });

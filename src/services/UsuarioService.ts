@@ -2,6 +2,9 @@ import bcrypt from 'bcryptjs';
 import { Usuario } from '../generated/prisma/client';
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { isValidCPF } from '../utils/CpfValidator';
+import { isValidEmail, normalizeEmail } from '../utils/EmailValidator';
+import { getPasswordValidationMessage, isValidPassword } from '../utils/PasswordValidator';
+import { mapPrismaCreateError } from '../utils/PrismaErrorMapper';
 
 export type CreateUsuarioDTO = Omit<
   Usuario,
@@ -21,12 +24,22 @@ export class UsuarioService {
     if (!data.email || data.email.trim() === '') {
       throw new Error('E-mail não pode ser vazio.');
     }
-    
+
+    const normalizedEmail = normalizeEmail(data.email);
+
+    if (!isValidEmail(normalizedEmail)) {
+      throw new Error('E-mail inválido.');
+    }
+
     if (!data.cpf || !isValidCPF(data.cpf)) {
       throw new Error('CPF inválido.');
     }
 
-    const emailEmUso = await this.usuarioRepository.findByEmail(data.email);
+    if (!isValidPassword(data.senha)) {
+      throw new Error(getPasswordValidationMessage());
+    }
+
+    const emailEmUso = await this.usuarioRepository.findByEmail(normalizedEmail);
     if (emailEmUso) {
       throw new Error('E-mail já está em uso.');
     }
@@ -35,6 +48,7 @@ export class UsuarioService {
 
     const novoUsuario: Omit<Usuario, 'id' | 'createdAt' | 'updatedAt'> = {
       ...data,
+      email: normalizedEmail,
       dataNascimento: new Date(data.dataNascimento),
       senha: hashedPassword,
       status: 'ATIVO',
@@ -43,7 +57,11 @@ export class UsuarioService {
       resetPasswordExpires: null,
     };
 
-    return this.usuarioRepository.create(novoUsuario);
+    try {
+      return await this.usuarioRepository.create(novoUsuario);
+    } catch (error) {
+      throw mapPrismaCreateError(error);
+    }
   }
 
   async findAll(): Promise<Usuario[]> {

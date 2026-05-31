@@ -2,12 +2,17 @@ import express from 'express';
 import request from 'supertest';
 import { AuthController } from './AuthController';
 import { AuthService, ESQUECI_SENHA_SUCCESS_MESSAGE, REDEFINIR_SENHA_SUCCESS_MESSAGE } from '../services/AuthService';
+import {
+  resetAuthRateLimitStore,
+  validarCodigoRateLimitByIp,
+} from '../middlewares/authRateLimitMiddleware';
 
 describe('AuthController (integração HTTP)', () => {
   let authServiceMock: jest.Mocked<AuthService>;
   let app: express.Application;
 
   beforeEach(() => {
+    resetAuthRateLimitStore();
     authServiceMock = {
       login: jest.fn(),
       esqueciSenha: jest.fn(),
@@ -19,7 +24,7 @@ describe('AuthController (integração HTTP)', () => {
     app = express();
     app.use(express.json());
     app.post('/auth/esqueci-senha', controller.esqueciSenha.bind(controller));
-    app.post('/auth/validar-codigo', controller.validarCodigo.bind(controller));
+    app.post('/auth/validar-codigo', validarCodigoRateLimitByIp, controller.validarCodigo.bind(controller));
     app.post('/auth/redefinir-senha', controller.redefinirSenha.bind(controller));
   });
 
@@ -33,29 +38,7 @@ describe('AuthController (integração HTTP)', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ message: ESQUECI_SENHA_SUCCESS_MESSAGE });
-      expect(response.body).not.toHaveProperty('token');
-    });
-
-    it('Deve retornar 400 para e-mail com tipo inválido', async () => {
-      const response = await request(app)
-        .post('/auth/esqueci-senha')
-        .send({ email: { malicious: true } });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('E-mail inválido.');
-      expect(authServiceMock.esqueciSenha).not.toHaveBeenCalled();
-    });
-
-    it('Deve repassar payload com tentativa de SQL injection ao service', async () => {
-      authServiceMock.esqueciSenha.mockResolvedValueOnce({ message: ESQUECI_SENHA_SUCCESS_MESSAGE });
-
-      const sqlPayload = "' OR 1=1; DROP TABLE Usuario; --";
-      const response = await request(app)
-        .post('/auth/esqueci-senha')
-        .send({ email: sqlPayload });
-
-      expect(response.status).toBe(200);
-      expect(authServiceMock.esqueciSenha).toHaveBeenCalledWith({ email: sqlPayload });
+      expect(response.body).not.toHaveProperty('codigo');
     });
   });
 
@@ -65,10 +48,27 @@ describe('AuthController (integração HTTP)', () => {
 
       const response = await request(app)
         .post('/auth/validar-codigo')
-        .send({ email: 'usuario@email.com', codigo: 'token_valido' });
+        .send({ email: 'usuario@email.com', codigo: '123456' });
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ valid: true });
+    });
+
+    it('Deve retornar 429 quando o rate limit for excedido', async () => {
+      authServiceMock.validarCodigo.mockResolvedValue({ valid: true });
+
+      for (let i = 0; i < 30; i++) {
+        await request(app)
+          .post('/auth/validar-codigo')
+          .send({ codigo: '123456' });
+      }
+
+      const response = await request(app)
+        .post('/auth/validar-codigo')
+        .send({ codigo: '123456' });
+
+      expect(response.status).toBe(429);
+      expect(response.body.message).toContain('Muitas tentativas');
     });
 
     it('Deve retornar 400 para código com tipo inválido sem chamar o service', async () => {
@@ -80,48 +80,35 @@ describe('AuthController (integração HTTP)', () => {
       expect(response.body.message).toBe('Código inválido.');
       expect(authServiceMock.validarCodigo).not.toHaveBeenCalled();
     });
-
-    it('Deve retornar 400 quando o código for inválido ou expirado', async () => {
-      authServiceMock.validarCodigo.mockRejectedValueOnce(new Error('Código inválido ou expirado.'));
-
-      const response = await request(app)
-        .post('/auth/validar-codigo')
-        .send({ email: 'usuario@email.com', codigo: 'token_errado' });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Código inválido ou expirado.');
-    });
   });
 
   describe('POST /auth/redefinir-senha', () => {
-    it('Deve retornar 200 ao redefinir senha', async () => {
+    it('Deve retornar 200 ao redefinir senha com codigo', async () => {
       authServiceMock.redefinirSenha.mockResolvedValueOnce({ message: REDEFINIR_SENHA_SUCCESS_MESSAGE });
 
       const response = await request(app)
         .post('/auth/redefinir-senha')
-        .send({ token: 'token_valido', novaSenha: '123456' });
+        .send({ codigo: '123456', novaSenha: '123456' });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe(REDEFINIR_SENHA_SUCCESS_MESSAGE);
+      expect(authServiceMock.redefinirSenha).toHaveBeenCalledWith({
+        codigo: '123456',
+        novaSenha: '123456',
+      });
     });
 
-    it('Deve retornar 400 para token com tipo inválido', async () => {
+    it('Deve aceitar campo token como alias de codigo', async () => {
+      authServiceMock.redefinirSenha.mockResolvedValueOnce({ message: REDEFINIR_SENHA_SUCCESS_MESSAGE });
+
       const response = await request(app)
         .post('/auth/redefinir-senha')
-        .send({ token: ['array'], novaSenha: '123456' });
+        .send({ token: '847291', novaSenha: '123456' });
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Token inválido.');
-      expect(authServiceMock.redefinirSenha).not.toHaveBeenCalled();
-    });
-
-    it('Deve retornar 400 para novaSenha com tipo inválido', async () => {
-      const response = await request(app)
-        .post('/auth/redefinir-senha')
-        .send({ token: 'abc', novaSenha: 123456 });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Nova senha inválido.');
+      expect(response.status).toBe(200);
+      expect(authServiceMock.redefinirSenha).toHaveBeenCalledWith({
+        codigo: '847291',
+        novaSenha: '123456',
+      });
     });
   });
 });

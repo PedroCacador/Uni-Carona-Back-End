@@ -4,8 +4,14 @@ import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { IEmailService } from './IEmailService';
 import { isValidEmail, normalizeEmail } from '../utils/EmailValidator';
 import { getPasswordValidationMessage, isValidPassword } from '../utils/PasswordValidator';
-import { generateResetToken, hashResetToken } from '../utils/ResetTokenHelper';
+import {
+  generateResetCode,
+  hashResetCode,
+  isValidResetCodeFormat,
+  normalizeResetCode,
+} from '../utils/ResetTokenHelper';
 import { sanitizeUsuario } from '../utils/UsuarioSanitizer';
+import { getEnvOrDefault, getRequiredEnv } from '../config/env';
 
 export interface LoginDTO {
   email: string;
@@ -17,7 +23,7 @@ export interface EsqueciSenhaDTO {
 }
 
 export interface RedefinirSenhaDTO {
-  token: string;
+  codigo: string;
   novaSenha: string;
 }
 
@@ -29,11 +35,14 @@ export interface ValidarCodigoDTO {
 const DEFAULT_RESET_EXPIRES_MINUTES = 15;
 
 export const ESQUECI_SENHA_SUCCESS_MESSAGE =
-  'Se o e-mail existir, um link de recuperação foi enviado.';
+  'Se o e-mail existir, um código de recuperação foi enviado.';
 
 export const REDEFINIR_SENHA_SUCCESS_MESSAGE = 'Senha redefinida com sucesso.';
 
 export const CODIGO_INVALIDO_MESSAGE = 'Código inválido ou expirado.';
+
+export const CODIGO_FORMATO_INVALIDO_MESSAGE =
+  'Código inválido. Informe 6 dígitos numéricos.';
 
 export class AuthService {
   constructor(
@@ -55,12 +64,8 @@ export class AuthService {
       throw new Error('Credenciais inválidas.');
     }
 
-    const secret = process.env.JWT_SECRET;
-    const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
-
-    if (!secret) {
-      throw new Error('Configuração de segurança ausente (JWT_SECRET).');
-    }
+    const secret = getRequiredEnv('JWT_SECRET');
+    const expiresIn = getEnvOrDefault('JWT_EXPIRES_IN', '1d');
 
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, role: usuario.role },
@@ -87,47 +92,44 @@ export class AuthService {
     const usuario = await this.usuarioRepository.findByEmail(normalizedEmail);
 
     if (usuario && usuario.status === 'ATIVO') {
-      const { rawToken, tokenHash } = generateResetToken();
+      const { rawCode, codeHash } = generateResetCode();
       const expiresAt = this.getResetTokenExpirationDate();
+
+      // E-mail antes da persistência: evita código válido no banco sem entrega (B1).
+      await this.emailService.sendPasswordResetEmail(normalizedEmail, rawCode);
 
       await this.usuarioRepository.update({
         id: usuario.id,
-        resetPasswordToken: tokenHash,
+        resetPasswordToken: codeHash,
         resetPasswordExpires: expiresAt,
       });
-
-      await this.emailService.sendPasswordResetEmail(normalizedEmail, rawToken);
     }
 
     return { message: ESQUECI_SENHA_SUCCESS_MESSAGE };
   }
 
   async validarCodigo({ email, codigo }: ValidarCodigoDTO): Promise<{ valid: true }> {
-    if (typeof codigo !== 'string' || codigo.trim() === '') {
-      throw new Error('Código é obrigatório.');
-    }
+    const normalizedCode = this.resolveResetCode(codigo);
+    const codeHash = hashResetCode(normalizedCode);
+    const usuario = await this.usuarioRepository.findByResetPasswordToken(codeHash);
 
-    const tokenHash = hashResetToken(codigo);
-    const usuario = await this.usuarioRepository.findByResetPasswordToken(tokenHash);
-
-    // findByResetPasswordToken já garante token existente, não expirado e usuário ATIVO.
     if (!usuario) {
       throw new Error(CODIGO_INVALIDO_MESSAGE);
     }
 
-    // Garante que o código pertence ao e-mail informado, sem revelar qual parte falhou.
-    if (typeof email === 'string' && email.trim() !== '' && normalizeEmail(email) !== usuario.email) {
+    if (
+      typeof email === 'string' &&
+      email.trim() !== '' &&
+      normalizeEmail(email) !== normalizeEmail(usuario.email)
+    ) {
       throw new Error(CODIGO_INVALIDO_MESSAGE);
     }
 
-    // Não consome o token: a invalidação ocorre apenas em redefinirSenha.
     return { valid: true };
   }
 
-  async redefinirSenha({ token, novaSenha }: RedefinirSenhaDTO): Promise<{ message: string }> {
-    if (typeof token !== 'string' || token.trim() === '') {
-      throw new Error('Token é obrigatório.');
-    }
+  async redefinirSenha({ codigo, novaSenha }: RedefinirSenhaDTO): Promise<{ message: string }> {
+    const normalizedCode = this.resolveResetCode(codigo);
 
     if (typeof novaSenha !== 'string' || novaSenha.trim() === '') {
       throw new Error('Nova senha é obrigatória.');
@@ -137,11 +139,11 @@ export class AuthService {
       throw new Error(getPasswordValidationMessage());
     }
 
-    const tokenHash = hashResetToken(token);
-    const usuario = await this.usuarioRepository.findByResetPasswordToken(tokenHash);
+    const codeHash = hashResetCode(normalizedCode);
+    const usuario = await this.usuarioRepository.findByResetPasswordToken(codeHash);
 
     if (!usuario) {
-      throw new Error('Token inválido ou expirado.');
+      throw new Error(CODIGO_INVALIDO_MESSAGE);
     }
 
     const hashedPassword = await bcrypt.hash(novaSenha, 10);
@@ -154,6 +156,18 @@ export class AuthService {
     });
 
     return { message: REDEFINIR_SENHA_SUCCESS_MESSAGE };
+  }
+
+  private resolveResetCode(codigo: unknown): string {
+    if (typeof codigo !== 'string' || codigo.trim() === '') {
+      throw new Error('Código é obrigatório.');
+    }
+
+    if (!isValidResetCodeFormat(codigo)) {
+      throw new Error(CODIGO_FORMATO_INVALIDO_MESSAGE);
+    }
+
+    return normalizeResetCode(codigo);
   }
 
   private getResetTokenExpirationDate(): Date {

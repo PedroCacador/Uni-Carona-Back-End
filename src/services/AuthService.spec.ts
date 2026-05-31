@@ -9,7 +9,7 @@ import {
 import { IUsuarioRepository } from '../repositories/IUsuarioRepository';
 import { IEmailService } from './IEmailService';
 import { Usuario } from '../generated/prisma/client';
-import { hashResetToken } from '../utils/ResetTokenHelper';
+import { hashResetCode } from '../utils/ResetTokenHelper';
 
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
@@ -60,6 +60,16 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
+    it('Deve aceitar login com e-mail em formato diferente do armazenado (normalização)', async () => {
+      usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(mockUsuario);
+      (bcrypt.compare as jest.Mock).mockResolvedValueOnce(true);
+      (jwt.sign as jest.Mock).mockReturnValueOnce('jwt-token');
+
+      await authService.login({ email: '  Joao@Teste.com  ', senha: 'senha123' });
+
+      expect(usuarioRepositoryMock.findByEmail).toHaveBeenCalledWith('joao@teste.com');
+    });
+
     it('Deve lançar erro se credenciais forem inválidas', async () => {
       usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(null);
 
@@ -131,7 +141,7 @@ describe('AuthService', () => {
       expect(emailServiceMock.sendPasswordResetEmail).not.toHaveBeenCalled();
     });
 
-    it('Deve gerar token, salvar no banco e enviar e-mail para usuário ativo', async () => {
+    it('Deve gerar código de 6 dígitos, salvar hash no banco e enviar e-mail para usuário ativo', async () => {
       usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(mockUsuario);
       usuarioRepositoryMock.update.mockResolvedValueOnce(mockUsuario);
 
@@ -148,18 +158,46 @@ describe('AuthService', () => {
       );
       expect(emailServiceMock.sendPasswordResetEmail).toHaveBeenCalledWith(
         'joao@teste.com',
-        expect.any(String)
+        expect.stringMatching(/^\d{6}$/)
       );
+    });
+
+    it('Deve enviar e-mail antes de persistir o código no banco', async () => {
+      const callOrder: string[] = [];
+      usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(mockUsuario);
+      emailServiceMock.sendPasswordResetEmail.mockImplementation(async () => {
+        callOrder.push('email');
+      });
+      usuarioRepositoryMock.update.mockImplementation(async () => {
+        callOrder.push('update');
+        return mockUsuario;
+      });
+
+      await authService.esqueciSenha({ email: 'joao@teste.com' });
+
+      expect(callOrder).toEqual(['email', 'update']);
+    });
+
+    it('Não deve persistir código se o envio de e-mail falhar', async () => {
+      usuarioRepositoryMock.findByEmail.mockResolvedValueOnce(mockUsuario);
+      emailServiceMock.sendPasswordResetEmail.mockRejectedValueOnce(
+        new Error('Não foi possível enviar o e-mail de recuperação. Tente novamente mais tarde.')
+      );
+
+      await expect(authService.esqueciSenha({ email: 'joao@teste.com' })).rejects.toThrow(
+        'Não foi possível enviar o e-mail de recuperação. Tente novamente mais tarde.'
+      );
+      expect(usuarioRepositoryMock.update).not.toHaveBeenCalled();
     });
   });
 
   describe('validarCodigo', () => {
-    const rawToken = 'abc123token';
-    const tokenHash = hashResetToken(rawToken);
+    const rawCode = '847291';
+    const codeHash = hashResetCode(rawCode);
 
     const usuarioComToken: Usuario = {
       ...mockUsuario,
-      resetPasswordToken: tokenHash,
+      resetPasswordToken: codeHash,
       resetPasswordExpires: new Date(Date.now() + 15 * 60 * 1000),
     };
 
@@ -174,101 +212,118 @@ describe('AuthService', () => {
       ).rejects.toThrow('Código é obrigatório.');
     });
 
+    it('Deve lançar erro se o formato do código for inválido', async () => {
+      await expect(authService.validarCodigo({ codigo: 'abc123' })).rejects.toThrow(
+        'Código inválido. Informe 6 dígitos numéricos.'
+      );
+    });
+
     it('Deve lançar erro se o código for inválido ou expirado', async () => {
       usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce(null);
 
-      await expect(authService.validarCodigo({ codigo: rawToken })).rejects.toThrow(CODIGO_INVALIDO_MESSAGE);
-      expect(usuarioRepositoryMock.findByResetPasswordToken).toHaveBeenCalledWith(tokenHash);
+      await expect(authService.validarCodigo({ codigo: rawCode })).rejects.toThrow(CODIGO_INVALIDO_MESSAGE);
+      expect(usuarioRepositoryMock.findByResetPasswordToken).toHaveBeenCalledWith(codeHash);
     });
 
     it('Deve lançar erro se o código não pertencer ao e-mail informado', async () => {
       usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce(usuarioComToken);
 
       await expect(
-        authService.validarCodigo({ email: 'outro@teste.com', codigo: rawToken })
+        authService.validarCodigo({ email: 'outro@teste.com', codigo: rawCode })
       ).rejects.toThrow(CODIGO_INVALIDO_MESSAGE);
     });
 
     it('Deve validar com sucesso SEM consumir o token (sem update)', async () => {
       usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce(usuarioComToken);
 
-      const result = await authService.validarCodigo({ email: '  Joao@Teste.com  ', codigo: rawToken });
+      const result = await authService.validarCodigo({ email: '  Joao@Teste.com  ', codigo: rawCode });
 
       expect(result).toEqual({ valid: true });
       expect(usuarioRepositoryMock.update).not.toHaveBeenCalled();
     });
+
+    it('Deve validar e-mail informado com normalização mesmo se armazenado em maiúsculas', async () => {
+      usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce({
+        ...usuarioComToken,
+        email: 'Joao@Teste.com',
+      });
+
+      const result = await authService.validarCodigo({ email: 'joao@teste.com', codigo: rawCode });
+
+      expect(result).toEqual({ valid: true });
+    });
   });
 
   describe('redefinirSenha', () => {
-    const rawToken = 'abc123token';
-    const tokenHash = hashResetToken(rawToken);
+    const rawCode = '123456';
+    const codeHash = hashResetCode(rawCode);
 
-    it('Deve lançar erro se o token for vazio', async () => {
+    it('Deve lançar erro se o código for vazio', async () => {
       await expect(
-        authService.redefinirSenha({ token: '', novaSenha: '123456' })
-      ).rejects.toThrow('Token é obrigatório.');
+        authService.redefinirSenha({ codigo: '', novaSenha: '123456' })
+      ).rejects.toThrow('Código é obrigatório.');
     });
 
     it('Deve lançar erro se a nova senha for vazia', async () => {
       await expect(
-        authService.redefinirSenha({ token: rawToken, novaSenha: '' })
+        authService.redefinirSenha({ codigo: rawCode, novaSenha: '' })
       ).rejects.toThrow('Nova senha é obrigatória.');
     });
 
     it('Deve lançar erro se a senha não atender ao mínimo', async () => {
       await expect(
-        authService.redefinirSenha({ token: rawToken, novaSenha: '123' })
+        authService.redefinirSenha({ codigo: rawCode, novaSenha: '123' })
       ).rejects.toThrow('A senha deve ter no mínimo 6 caracteres.');
     });
 
-    it('Deve lançar erro se o token for inválido ou expirado', async () => {
+    it('Deve lançar erro se o código for inválido ou expirado', async () => {
       usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce(null);
 
       await expect(
-        authService.redefinirSenha({ token: rawToken, novaSenha: '123456' })
-      ).rejects.toThrow('Token inválido ou expirado.');
+        authService.redefinirSenha({ codigo: rawCode, novaSenha: '123456' })
+      ).rejects.toThrow(CODIGO_INVALIDO_MESSAGE);
 
-      expect(usuarioRepositoryMock.findByResetPasswordToken).toHaveBeenCalledWith(tokenHash);
+      expect(usuarioRepositoryMock.findByResetPasswordToken).toHaveBeenCalledWith(codeHash);
     });
 
-    it('Deve lançar erro se token ou senha não forem string', async () => {
+    it('Deve lançar erro se código ou senha não forem string', async () => {
       await expect(
-        authService.redefinirSenha({ token: 123 as unknown as string, novaSenha: '123456' })
-      ).rejects.toThrow('Token é obrigatório.');
+        authService.redefinirSenha({ codigo: 123 as unknown as string, novaSenha: '123456' })
+      ).rejects.toThrow('Código é obrigatório.');
 
       await expect(
-        authService.redefinirSenha({ token: rawToken, novaSenha: 123456 as unknown as string })
+        authService.redefinirSenha({ codigo: rawCode, novaSenha: 123456 as unknown as string })
       ).rejects.toThrow('Nova senha é obrigatória.');
     });
 
-    it('Deve impedir reutilização do token após redefinição bem-sucedida', async () => {
+    it('Deve impedir reutilização do código após redefinição bem-sucedida', async () => {
       usuarioRepositoryMock.findByResetPasswordToken
         .mockResolvedValueOnce({
           ...mockUsuario,
-          resetPasswordToken: tokenHash,
+          resetPasswordToken: codeHash,
           resetPasswordExpires: new Date(Date.now() + 15 * 60 * 1000),
         })
         .mockResolvedValueOnce(null);
       (bcrypt.hash as jest.Mock).mockResolvedValueOnce('nova_senha_hash');
       usuarioRepositoryMock.update.mockResolvedValueOnce(mockUsuario);
 
-      await authService.redefinirSenha({ token: rawToken, novaSenha: '123456' });
+      await authService.redefinirSenha({ codigo: rawCode, novaSenha: '123456' });
 
       await expect(
-        authService.redefinirSenha({ token: rawToken, novaSenha: '654321' })
-      ).rejects.toThrow('Token inválido ou expirado.');
+        authService.redefinirSenha({ codigo: rawCode, novaSenha: '654321' })
+      ).rejects.toThrow(CODIGO_INVALIDO_MESSAGE);
     });
 
     it('Deve redefinir senha, invalidar token e retornar mensagem de sucesso', async () => {
       usuarioRepositoryMock.findByResetPasswordToken.mockResolvedValueOnce({
         ...mockUsuario,
-        resetPasswordToken: tokenHash,
+        resetPasswordToken: codeHash,
         resetPasswordExpires: new Date(Date.now() + 15 * 60 * 1000),
       });
       (bcrypt.hash as jest.Mock).mockResolvedValueOnce('nova_senha_hash');
       usuarioRepositoryMock.update.mockResolvedValueOnce(mockUsuario);
 
-      const result = await authService.redefinirSenha({ token: rawToken, novaSenha: '123456' });
+      const result = await authService.redefinirSenha({ codigo: rawCode, novaSenha: '123456' });
 
       expect(result.message).toBe(REDEFINIR_SENHA_SUCCESS_MESSAGE);
       expect(usuarioRepositoryMock.update).toHaveBeenCalledWith({

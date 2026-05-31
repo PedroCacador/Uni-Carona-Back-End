@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { getRequiredEnv } from '../config/env';
 
 export interface TokenPayload {
   id: string;
@@ -17,12 +18,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   const [, token] = authHeader.split(' ');
 
   try {
-    const secret = process.env.JWT_SECRET;
-
-    if (!secret) {
-      throw new Error('JWT_SECRET not configured');
-    }
-
+    const secret = getRequiredEnv('JWT_SECRET');
     const decoded = jwt.verify(token, secret) as TokenPayload;
 
     req.userId = decoded.id;
