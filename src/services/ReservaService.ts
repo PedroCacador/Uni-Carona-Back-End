@@ -20,6 +20,10 @@ export class ReservaService {
             throw new Error("Carona não existe");
         }
 
+        if (carona.motoristaId === data.usuarioId) {
+            throw new Error("Você não pode reservar sua própria carona");
+        }
+
         if (data.quantidadePessoas > carona.assentosDisponiveis) {
             throw new Error(`Apenas ${carona.assentosDisponiveis} assentos disponíveis. Você tentou reservar ${data.quantidadePessoas}`);
         }
