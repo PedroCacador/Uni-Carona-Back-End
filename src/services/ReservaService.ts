@@ -24,6 +24,17 @@ export class ReservaService {
             throw new Error(`Apenas ${carona.assentosDisponiveis} assentos disponíveis. Você tentou reservar ${data.quantidadePessoas}`);
         }
 
+        const existingReservas = await this.reservaRepository.findByUsuarioId(data.usuarioId);
+        const existingReserva = existingReservas.find(r => r.caronaId === data.caronaId);
+
+        if (existingReserva) {
+            if (existingReserva.status === StatusReserva.CANCELADA) {
+                // Reativa a reserva cancelada para evitar erro de constraint unique
+                return this.reservaRepository.updateStatus(existingReserva.id, StatusReserva.PENDENTE);
+            }
+            throw new Error("Você já possui uma reserva para esta carona");
+        }
+
         return this.reservaRepository.create({
             ...data,
             status: StatusReserva.PENDENTE
