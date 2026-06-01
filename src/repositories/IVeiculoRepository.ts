@@ -8,7 +8,7 @@ export interface IVeiculoRepository {
   findAll(params?: any): Promise<Veiculo[]>;
   findById(id: string, include?: any): Promise<Veiculo | null>;
   findByPlaca(placa: string): Promise<Veiculo | null>;
-  findByProprietario(proprietarioId: string): Promise<Veiculo | null>;
+  findByProprietario(proprietarioId: string): Promise<Veiculo[]>;
   update(id: string, data: UpdateVeiculoDTO): Promise<Veiculo>;
   delete(id: string): Promise<Veiculo>;
 }

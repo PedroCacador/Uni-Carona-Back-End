@@ -18,8 +18,8 @@ export class VeiculoService {
       throw new Error('Proprietário não encontrado ou inativo.');
     }
 
-    const veiculoExistente = await this.veiculoRepository.findByProprietario(data.proprietarioId);
-    if (veiculoExistente) {
+    const veiculosExistentes = await this.veiculoRepository.findByProprietario(data.proprietarioId);
+    if (veiculosExistentes.length > 0) {
       throw new Error('Este proprietário já possui um veículo cadastrado.');
     }
 
@@ -43,12 +43,8 @@ export class VeiculoService {
     return veiculo;
   }
 
-  async findByProprietario(proprietarioId: string): Promise<Veiculo> {
-    const veiculo = await this.veiculoRepository.findByProprietario(proprietarioId);
-    if (!veiculo) {
-      throw new Error('Nenhum veículo encontrado para este proprietário.');
-    }
-    return veiculo;
+  async findByProprietario(proprietarioId: string): Promise<Veiculo[]> {
+    return this.veiculoRepository.findByProprietario(proprietarioId);
   }
 
   async update(id: string, data: UpdateVeiculoDTO): Promise<Veiculo> {

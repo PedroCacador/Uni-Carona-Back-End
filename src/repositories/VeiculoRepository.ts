@@ -14,8 +14,8 @@ export class VeiculoRepository extends BaseRepository<Veiculo, CreateVeiculoDTO,
         });
     }
 
-    async findByProprietario(proprietarioId: string): Promise<Veiculo | null> {
-        return this.model.findFirst({
+    async findByProprietario(proprietarioId: string): Promise<Veiculo[]> {
+        return this.model.findMany({
             where: { proprietarioId }
         });
     }

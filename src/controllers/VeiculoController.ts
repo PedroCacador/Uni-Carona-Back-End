@@ -47,10 +47,10 @@ export class VeiculoController {
   async findByProprietario(req: Request, res: Response): Promise<void> {
     try {
       const id = req.params.id as string;
-      const veiculo = await this.veiculoService.findByProprietario(id);
-      res.json(veiculo);
+      const veiculos = await this.veiculoService.findByProprietario(id);
+      res.json(veiculos);
     } catch (error: any) {
-      res.status(404).json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 

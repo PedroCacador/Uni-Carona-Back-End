@@ -77,20 +77,20 @@ describe('VeiculoService', () => {
 
     it('Deve lançar erro se o proprietário já possuir veículo', async () => {
       usuarioRepositoryMock.findById.mockResolvedValueOnce(mockUsuario);
-      veiculoRepositoryMock.findByProprietario.mockResolvedValueOnce(mockVeiculo);
+      veiculoRepositoryMock.findByProprietario.mockResolvedValueOnce([mockVeiculo]);
       await expect(veiculoService.create(createDto)).rejects.toThrow('Este proprietário já possui um veículo cadastrado.');
     });
 
     it('Deve lançar erro se a placa já existir', async () => {
       usuarioRepositoryMock.findById.mockResolvedValueOnce(mockUsuario);
-      veiculoRepositoryMock.findByProprietario.mockResolvedValueOnce(null);
+      veiculoRepositoryMock.findByProprietario.mockResolvedValueOnce([]);
       veiculoRepositoryMock.findByPlaca.mockResolvedValueOnce(mockVeiculo);
       await expect(veiculoService.create(createDto)).rejects.toThrow('Já existe um veículo com esta placa.');
     });
 
     it('Deve criar um veículo com sucesso', async () => {
       usuarioRepositoryMock.findById.mockResolvedValueOnce(mockUsuario);
-      veiculoRepositoryMock.findByProprietario.mockResolvedValueOnce(null);
+      veiculoRepositoryMock.findByProprietario.mockResolvedValueOnce([]);
       veiculoRepositoryMock.findByPlaca.mockResolvedValueOnce(null);
       veiculoRepositoryMock.create.mockResolvedValueOnce(mockVeiculo);
 

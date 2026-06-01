@@ -32,7 +32,7 @@ export class ReservaRepository {
     async findByUsuarioId(usuarioId: string): Promise<Reserva[]> {
         return prisma.reserva.findMany({
             where: { usuarioId },
-            include: { carona: true }
+            include: { carona: { include: { motorista: true } } }
         });
     }
 
