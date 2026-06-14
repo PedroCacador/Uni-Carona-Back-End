@@ -1,0 +1,270 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Uni-Carona",
+    "description": "Documentação interativa da API do sistema de caronas universitárias",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Servidor Atual"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Autenticação"],
+        "summary": "Realizar Login",
+        "description": "Autentica um usuário cadastrado e retorna um token JWT.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "example": "joao@dominio.com" },
+                  "senha": { "type": "string", "example": "senhaSegura123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login efetuado com sucesso" },
+          "401": { "description": "Credenciais inválidas" }
+        }
+      }
+    },
+    "/auth/esqueci-senha": {
+      "post": {
+        "tags": ["Autenticação"],
+        "summary": "Recuperação de Senha",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "example": "joao@dominio.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "E-mail de recuperação enviado" },
+          "404": { "description": "E-mail não cadastrado" }
+        }
+      }
+    },
+    "/usuarios": {
+      "post": {
+        "tags": ["Usuários"],
+        "summary": "Criar Usuário",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nome": { "type": "string" },
+                  "email": { "type": "string" },
+                  "senha": { "type": "string" },
+                  "curso": { "type": "string" },
+                  "cpf": { "type": "string" },
+                  "matricula": { "type": "string" },
+                  "dataNascimento": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Criado" },
+          "400": { "description": "Requisição inválida" }
+        }
+      }
+    },
+    "/usuarios/{id}": {
+      "get": {
+        "tags": ["Usuários"],
+        "summary": "Obter Perfil de Usuário",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Sucesso" },
+          "404": { "description": "Não encontrado" }
+        }
+      }
+    },
+    "/carona": {
+      "post": {
+        "tags": ["Caronas"],
+        "summary": "Oferecer Carona",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "origem": { "type": "string" },
+                  "destino": { "type": "string" },
+                  "dataHora": { "type": "string", "format": "date-time" },
+                  "vagasTotais": { "type": "number" },
+                  "preco": { "type": "number" },
+                  "veiculoId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Criado" }
+        }
+      }
+    },
+    "/carona/buscar": {
+      "get": {
+        "tags": ["Caronas"],
+        "summary": "Buscar Caronas Disponíveis",
+        "parameters": [
+          { "name": "origem", "in": "query", "schema": { "type": "string" } },
+          { "name": "destino", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Sucesso" }
+        }
+      }
+    },
+    "/reservas": {
+      "post": {
+        "tags": ["Reservas"],
+        "summary": "Solicitar Vaga",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "caronaId": { "type": "string" },
+                  "quantidadePessoas": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reserva solicitada" }
+        }
+      }
+    },
+    "/reservas/{id}/status": {
+      "patch": {
+        "tags": ["Reservas"],
+        "summary": "Atualizar Status",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "example": "CONFIRMADA" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status atualizado" }
+        }
+      }
+    },
+    "/veiculos": {
+      "post": {
+        "tags": ["Veículos"],
+        "summary": "Cadastrar Veículo",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "placa": { "type": "string" },
+                  "modelo": { "type": "string" },
+                  "cor": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Veículo cadastrado" }
+        }
+      }
+    },
+    "/maps/search": {
+      "get": {
+        "tags": ["Mapas"],
+        "summary": "Buscar Endereço",
+        "parameters": [
+          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Sucesso" }
+        }
+      }
+    },
+    "/avaliacoes": {
+      "post": {
+        "tags": ["Avaliações"],
+        "summary": "Criar Avaliação",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "caronaId": { "type": "string" },
+                  "avaliadoId": { "type": "string" },
+                  "nota": { "type": "number", "example": 5 },
+                  "comentario": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Avaliação salva" }
+        }
+      }
+    }
+  }
+}
