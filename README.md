@@ -9,7 +9,7 @@ API REST para o **UniCarona**, aplicativo de caronas universitárias que conecta
 | API REST | Funcional |
 | Autenticação JWT | Funcional |
 | Recuperação de senha | Funcional (Resend em production, mock em dev) |
-| Testes automatizados | 80+ testes passando |
+| Testes automatizados | 146 testes passando |
 | Pronto para GitHub | Sim |
 | Pronto para produção | Parcial — ver [Riscos e melhorias](#riscos-e-melhorias) |
 
@@ -100,6 +100,28 @@ npm start
 ```
 
 Servidor padrão: `http://localhost:3333`
+
+### Deploy do banco (PostgreSQL / Supabase)
+
+Após configurar `DATABASE_URL` no `.env`:
+
+```bash
+# Aplicar migrations no banco remoto
+npm run db:migrate
+
+# (Opcional) Popular dados de exemplo
+npm run db:seed
+
+# Verificar status das migrations
+npm run db:status
+```
+
+Em produção, configure também `JWT_SECRET`, `RESEND_API_KEY` e `MAIL_FROM` antes de subir a API.
+
+```bash
+npm run build
+npm start
+```
 
 ---
 
@@ -228,7 +250,7 @@ Resposta (sempre genérica — anti-enumeração):
 
 1. Crie conta em [resend.com](https://resend.com).
 2. Gere API Key em [resend.com/api-keys](https://resend.com/api-keys).
-3. Para testes, use `onboarding@resend.dev` como remetente. Para produção, verifique seu domínio no dashboard.
+3. Para testes, use `onboarding@resend.dev` como remetente — **só envia para o e-mail da conta Resend**. Para produção, verifique seu domínio no dashboard.
 4. Configure no `.env`:
 
 ```env
@@ -298,12 +320,13 @@ GET /health
 
 ## Riscos e melhorias
 
-| Item | Prioridade |
-|------|------------|
-| Rate limiting nos endpoints de auth | Alta |
-| Fila/retry de e-mails em falha transitória | Média |
-| CI/CD com GitHub Actions | Média |
-| Normalizar e-mail no cadastro | Média |
+| Item | Prioridade | Status |
+|------|------------|--------|
+| Rate limiting nos endpoints de auth | Alta | Implementado |
+| Normalizar e-mail no cadastro | Média | Implementado |
+| Fila/retry de e-mails em falha transitória | Média | Pendente |
+| CI/CD com GitHub Actions | Média | Pendente |
+| Verificar domínio no Resend para envio a qualquer destinatário | Alta | Pendente (obrigatório em production) |
 
 ---
 
